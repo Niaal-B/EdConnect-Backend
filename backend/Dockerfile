@@ -15,9 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Load environment variables securely
-# Collect static files
-RUN mkdir -p /app/static
+# Create static files directory
+RUN mkdir -p /app/staticfiles
 
 # Run Django server using Gunicorn (Production-ready)
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]

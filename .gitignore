@@ -1,0 +1,64 @@
+# Python related
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+*.env
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Django specific
+staticfiles/
+media/
+config/__pycache__/
+api/__pycache__/
+*/migrations/*.py
+*/migrations/*.pyc
+*.log
+
+# Node / React
+frontend-react-ts/node_modules/
+frontend-react-ts/.next/
+frontend-react-ts/build/
+frontend-react-ts/dist/
+frontend-react-ts/.env.local
+frontend-react-ts/.eslintcache
+frontend-react-ts/.turbo/
+frontend-react-ts/.vscode/
+frontend-react-ts/coverage/
+
+# Docker related
+docker-compose.override.yml
+*.log
+*.pid
+*.sock
+
+# VSCode settings
+.vscode/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+
+# JetBrains IDEs
+.idea/
+
+# Python bytecode
+*.pyc
+*.pyo

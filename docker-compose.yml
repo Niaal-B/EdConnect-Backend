@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  app:
+  backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -9,14 +7,15 @@ services:
     restart: always
     ports:
       - "8000:8000"
-
     depends_on:
       - db
       - redis
     env_file:
       - ./.env  
     volumes:
-      - ./backend/staticfiles:/app/staticfiles  # Mapping static files
+      - ./backend:/app  
+      - ./backend/staticfiles:/app/staticfiles 
+
   redis:
     image: redis:7.0
     container_name: redis_server
@@ -29,24 +28,38 @@ services:
     container_name: postgres_db
     restart: always
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-postgres}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   nginx:
-      image: nginx:latest
-      container_name: nginx_server
-      restart: always
-      ports:
-        - "80:80"
-      volumes:
+    image: nginx:latest
+    container_name: nginx_server
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./backend/staticfiles:/app/staticfiles 
-      depends_on:
-        - app
+    depends_on:
+      - backend
+
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    user: "1000:1000"
+    command: ["celery", "-A", "config", "worker", "--loglevel=info", "--uid=0"]    
+    depends_on:
+      - redis
+      - backend
+    env_file:
+      - ./.env
+    volumes:
+      - ./backend:/app
 
 volumes:
-    postgres_data:
-    static_volume: 
+  postgres_data:

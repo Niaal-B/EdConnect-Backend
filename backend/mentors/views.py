@@ -10,7 +10,6 @@ class MentorLoginView(GenericAPIView):
         serializer = MentorLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
-        print(user)
 
         response = Response({"role" : "mentor"},status=status.HTTP_200_OK)
         return set_jwt_cookies(response,user)

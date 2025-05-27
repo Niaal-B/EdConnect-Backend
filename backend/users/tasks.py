@@ -4,7 +4,7 @@ from django.conf import settings
 
 @shared_task
 def send_verification_email(email, token):
-    verification_url = f"https://edconnect.com/verify-email/{token}/"
+    verification_url = f"http://localhost:3000/verify-email/{token}/"
     
     send_mail(
         subject="Verify Your EdConnect Account",

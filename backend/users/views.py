@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from users.redis_utils import redis_client
 import json
 from users.models import User
-
+from users.utils import set_jwt_cookies  
 class UserRegistrationView(generics.CreateAPIView):
     serializer_class = UserRegistrationSerializer
 
@@ -41,7 +41,7 @@ class VerifyEmailView(generics.GenericAPIView):
             data = redis_client.get(f"unverified:{token}")
             if not data:
                 return Response({"error": "Invalid token"}, status=400)
-                
+
             user_data = json.loads(data)
             user = User.objects.create_user(
                 email=user_data['email'],
@@ -51,6 +51,11 @@ class VerifyEmailView(generics.GenericAPIView):
                 is_active=True
             )
             redis_client.delete(f"unverified:{token}")
-            return Response({"status": "verified"})
+
+            # Create response and set cookies
+            response = Response({"status": "verified"}, status=status.HTTP_200_OK)
+            print("Hey hey this is the response")
+            return set_jwt_cookies(response, user) 
+
         except Exception as e:
             return Response({"error": str(e)}, status=400)

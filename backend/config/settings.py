@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from datetime import timedelta
+
 
 load_dotenv()
 
@@ -59,9 +61,11 @@ MIDDLEWARE = [
     
 ]
 
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'config.urls'
 
@@ -159,9 +163,18 @@ AUTH_USER_MODEL = 'users.User'
 
 
 SIMPLE_JWT = {
-    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_COOKIE': 'access_token',       # Cookie name
+    'AUTH_COOKIE_SECURE': False,         # True in production (HTTPS only)
+    'AUTH_COOKIE_HTTP_ONLY': True,       # Not accessible via JavaScript
+    'AUTH_COOKIE_SAMESITE': 'Lax',       # Prevents CSRF
+    'AUTH_COOKIE_PATH': '/',             # Available on all paths
+    'AUTH_COOKIE_DOMAIN': None,  
+    'AUTH_COOKIE_REFRESH': 'refresh_token',  # Name for refresh token cookie
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,  # Issues new refresh token on refresh
+    'BLACKLIST_AFTER_ROTATION': True,  # Blacklists old refresh tokens        # Current domain only
 }
-
 
 CELERY_BROKER_URL = "redis://redis_server:6379/0"  
 CELERY_RESULT_BACKEND = "redis://redis_server:6379/0"

@@ -3,20 +3,27 @@ from django.conf import settings
 
 def set_jwt_cookies(response, user):
     refresh = RefreshToken.for_user(user)
+    cookie_kwargs = {
+        'httponly': True,
+        'secure': not settings.DEBUG,
+        'samesite': 'Lax',
+    }
+    
+    if settings.DEBUG:
+        cookie_kwargs['domain'] = 'localhost'
+    
     response.set_cookie(
         key='refresh_token',
         value=str(refresh),
-        httponly=True,
-        secure=not settings.DEBUG,
-        samesite='Lax',
-        max_age=60*60*24*7  # 7 days
+        max_age=60*60*24*7,
+        **cookie_kwargs
     )
+    
     response.set_cookie(
         key='access_token',
         value=str(refresh.access_token),
-        httponly=True,
-        secure=not settings.DEBUG,
-        samesite='Lax',
-        max_age=60*15  # 15 minutes
+        max_age=60*15,
+        **cookie_kwargs
     )
+    print(response,"this is response")    
     return response

@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from users.models import User
 from users.redis_utils import get_and_delete_unverified_user
+from rest_framework.serializers import ModelSerializer
+from mentors.serializers import MentorProfileSerializer
 
 class UserRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
@@ -25,3 +27,12 @@ class UserRegistrationSerializer(serializers.Serializer):
 
 class EmptySerializer(serializers.Serializer):
     pass
+
+
+class UserSerializer(ModelSerializer):
+    mentor_profile = MentorProfileSerializer(read_only=True) 
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email','role','created_at','is_active','mentor_profile']
+

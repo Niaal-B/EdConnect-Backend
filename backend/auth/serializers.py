@@ -8,3 +8,8 @@ class UserLoginSerializer(serializers.Serializer):
         user = authenticate(email=attrs['email'],password=attrs['password'])
         return user
 
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class ResetPasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True)

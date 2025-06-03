@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'storages', 
     'api',
+    'drf_yasg',
     'drf_spectacular',
     'users',
     'mentors',
@@ -156,6 +157,12 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+     'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser', 
+        'rest_framework.parsers.FormParser',
+
+    ],
 }
 
 
@@ -169,11 +176,11 @@ SIMPLE_JWT = {
     'AUTH_COOKIE_SAMESITE': 'Lax',       # Prevents CSRF
     'AUTH_COOKIE_PATH': '/',             # Available on all paths
     'AUTH_COOKIE_DOMAIN': None,  
-    'AUTH_COOKIE_REFRESH': 'refresh_token',  # Name for refresh token cookie
+    'AUTH_COOKIE_REFRESH': 'refresh_token',  
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,  # Issues new refresh token on refresh
-    'BLACKLIST_AFTER_ROTATION': True,  # Blacklists old refresh tokens        # Current domain only
+    'ROTATE_REFRESH_TOKENS': True,  
+    'BLACKLIST_AFTER_ROTATION': True,  
 }
 
 CELERY_BROKER_URL = "redis://redis_server:6379/0"  
@@ -200,7 +207,7 @@ STORAGES = {
     'staticfiles': {
         'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
         'OPTIONS': {
-            'location': 'static/',  # Ensures files go into S3 under 'static/' subfolder
+            'location': 'static/',  
         },
     },
 }
@@ -211,12 +218,25 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Mentorship Platform API',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
-    'COMPONENT_SPLIT_REQUEST': True,  
-    'SWAGGER_UI_SETTINGS': {
+     'COMPONENT_SPLIT_REQUEST': True, 
+         'SWAGGER_UI_SETTINGS': {
         'deepLinking': True,
         'persistAuthorization': True,
+        'displayRequestDuration': True,
+        'filter': True,
     },
+    'APPEND_COMPONENTS': {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    },
+    'SECURITY': [{"BearerAuth": []}]
 }
+
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

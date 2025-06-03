@@ -11,6 +11,15 @@ from users.utils import set_jwt_cookies
 from rest_framework_simplejwt.tokens import AccessToken,RefreshToken
 from .authentication import CookieJWTAuthentication
 from django.conf import settings
+from rest_framework.views import APIView
+from users.models import User
+from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+from users.tasks import send_reset_password_email
+from auth.serializers import ForgotPasswordSerializer,ResetPasswordSerializer
+from drf_yasg.utils import swagger_auto_schema
+
 logger = logging.getLogger(__name__)
 
 class VerifyAuthView(GenericAPIView):
@@ -36,7 +45,7 @@ class CheckSessionView(GenericAPIView):
     def get(self, request):
         try:
             response_data = {
-                "valid": True,  # Changed from string "True" to boolean
+                "valid": True,  
                 "user": {
                     "id": request.user.id,  
                     "email": request.user.email,
@@ -50,11 +59,11 @@ class CheckSessionView(GenericAPIView):
         except Exception as e:
             return Response(
                 {
-                    'valid': False,  # Changed from string "False" to boolean
+                    'valid': False,  
                     "error": str(e),
                     'message': 'session validation Failed'
                 },
-                status=status.HTTP_401_UNAUTHORIZED  # Changed from 500 to 401
+                status=status.HTTP_401_UNAUTHORIZED  
             )
 
 
@@ -108,3 +117,46 @@ class CookieTokenRefreshView(GenericAPIView):
                 {'error': 'Token refresh failed', 'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+
+
+class ForgotPasswordView(GenericAPIView):
+    serializer_class = ForgotPasswordSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email']
+        try:
+            user = User.objects.get(email=email)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            reset_link = f"http://localhost:3000/reset-password/{uid}/{token}"
+            send_reset_password_email.delay(email, reset_link)
+        except User.DoesNotExist:
+            pass  
+
+        return Response({'message': 'a reset link has been sent.'}, status=200)
+
+class ResetPasswordView(GenericAPIView):
+    serializer_class = ResetPasswordSerializer
+    def post(self, request, uidb64, token):
+        password = request.data.get('new_password')
+        if not password:
+            return Response({'error': 'Password is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = User.objects.get(pk=uid)
+
+            if not default_token_generator.check_token(user, token):
+                return Response({'error': 'Invalid or expired token'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.set_password(password)
+            user.save()
+
+            return Response({'message': 'Password reset successful'})
+        except (User.DoesNotExist, ValueError, TypeError, OverflowError):
+            return Response({'error': 'Invalid reset link'}, status=status.HTTP_400_BAD_REQUEST)

@@ -8,6 +8,9 @@ from users.redis_utils import redis_client
 import json
 from users.models import User
 from users.utils import set_jwt_cookies  
+from mentors.models import MentorDetails
+from students.models import StudentDetails
+
 class UserRegistrationView(generics.CreateAPIView):
     serializer_class = UserRegistrationSerializer
 
@@ -51,8 +54,14 @@ class VerifyEmailView(generics.GenericAPIView):
                 is_active=True
             )
             redis_client.delete(f"unverified:{token}")
+                
 
-            # Create response and set cookies
+            if user.role == 'mentor':
+                MentorDetails.objects.create(user=user)
+
+            else:
+                StudentDetails.objects.create(user=user)
+                
             response = Response({"status": "verified"}, status=status.HTTP_200_OK)
             print("Hey hey this is the response")
             return set_jwt_cookies(response, user) 

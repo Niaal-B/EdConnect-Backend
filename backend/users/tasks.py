@@ -13,3 +13,19 @@ def send_verification_email(email, token):
         recipient_list=[email],
         fail_silently=False,
     )
+
+
+
+@shared_task
+def send_reset_password_email(email, reset_link):
+    subject = "Reset Your Password"
+    message = f"Click the link to reset your password: {reset_link}"
+    from_email = "no-reply@example.com"
+
+    send_mail(
+        subject,
+        message,
+        from_email,
+        [email],
+        fail_silently=False
+    )

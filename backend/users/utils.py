@@ -26,4 +26,5 @@ def set_jwt_cookies(response, user):
         **cookie_kwargs
     )
     print(response,"this is response")    
+    response['access_token'] = refresh.access_token
     return response

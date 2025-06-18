@@ -17,6 +17,7 @@ djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.0
 drf-spectacular==0.28.0
 drf-yasg>=1.21.0
+django-filter>=23.2  
 gunicorn==23.0.0
 inflection==0.5.1
 jmespath==1.0.1

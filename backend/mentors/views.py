@@ -1,9 +1,10 @@
 from rest_framework.views import APIView
-from .serializers import MentorLoginSerializer,MentorProfileSerializer,ProfilePictureSerializer,VerificationDocumentSerializer,MentorProfileUpdateSerializer
+from .serializers import (MentorLoginSerializer,MentorProfileSerializer,ProfilePictureSerializer,
+VerificationDocumentSerializer,MentorProfileUpdateSerializer,PublicMentorSerializer)
 from rest_framework.response import Response
 from rest_framework import status,permissions
 from users.utils import set_jwt_cookies
-from rest_framework.generics import GenericAPIView,RetrieveUpdateAPIView
+from rest_framework.generics import GenericAPIView,RetrieveUpdateAPIView,ListAPIView
 from mentors.models import MentorDetails
 from auth.authentication import CookieJWTAuthentication
 from django.shortcuts import get_object_or_404
@@ -12,6 +13,9 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiTypes, OpenApiParameter, OpenApiExample
+from django_filters.rest_framework import DjangoFilterBackend
+from django_filters import rest_framework as filters
+from django.db import models
 
 
 
@@ -51,6 +55,7 @@ class MentorProfileView(RetrieveUpdateAPIView):
         if self.request.method == 'PATCH':
             return MentorProfileUpdateSerializer
         return MentorProfileSerializer
+
 
 class ProfilePictureView(APIView):
     """
@@ -107,5 +112,98 @@ class DocumentUploadView(APIView):
             'status': 'success',
             'document': serializer.data
         }, status=status.HTTP_201_CREATED)
+
+
+
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name='expertise',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Filter by expertise (case-insensitive)'
+        ),
+        OpenApiParameter(
+            name='experience_min',
+            type=int,
+            location=OpenApiParameter.QUERY,
+            description='Minimum years of experience'
+        ),
+        OpenApiParameter(
+            name='experience_max',
+            type=int,
+            location=OpenApiParameter.QUERY,
+            description='Maximum years of experience'
+        ),
+        OpenApiParameter(
+            name='page',
+            type=int,
+            location=OpenApiParameter.QUERY,
+            description='Page number'
+        ),
+    ]
+)
+class PublicMentorListView(ListAPIView):
+    """
+    Simple public API to list verified mentors with:
+    - Pagination (10 per page)
+    - Basic expertise filtering
+    - Error handling
+    
+    Example requests:
+    GET /api/mentors/                          # All mentors (page 1)
+    GET /api/mentors/?page=2                   # Page 2
+    GET /api/mentors/?expertise=python         # Filter by expertise
+    GET /api/mentors/?experience_min=5         # 5+ years experience
+    """
+    
+    serializer_class = PublicMentorSerializer
+    
+    def get_queryset(self):
+        try:
+            queryset = MentorDetails.objects.filter(is_verified=True)
+            
+            # 1. Filter by expertise (case-insensitive partial match)
+            expertise = self.request.query_params.get('expertise')
+            if expertise:
+                queryset = queryset.filter(expertise__icontains=expertise)
+            
+            # 2. Filter by minimum experience
+            exp_min = self.request.query_params.get('experience_min')
+            if exp_min:
+                queryset = queryset.filter(experience_years__gte=int(exp_min))
+            
+            # 3. Filter by maximum experience
+            exp_max = self.request.query_params.get('experience_max')
+            if exp_max:
+                queryset = queryset.filter(experience_years__lte=int(exp_max))
+            
+            return queryset.order_by('-experience_years')  # Sort by most experienced first
+            
+        except ValueError:
+            # Handles invalid number inputs (e.g. experience_min=abc)
+            return MentorDetails.objects.none()
+    
+    def list(self, request, *args, **kwargs):
+        try:
+            # Get the base response from DRF's ListAPIView
+            response = super().list(request, *args, **kwargs)
+            
+            # Add custom response format if needed
+            response.data = {
+                'success': True,
+                'mentors': response.data['results'],  # Paginated results
+                'total': response.data['count'],       # Total mentors count
+                'page': int(request.query_params.get('page', 1))
+            }
+            return response
+            
+        except Exception as e:
+            return Response(
+                {'success': False, 'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 

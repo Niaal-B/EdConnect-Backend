@@ -15,6 +15,14 @@ class MentorDetails(models.Model):
     bio = models.TextField(blank=True)
     phone = models.CharField(max_length=20, blank=True)
     expertise = models.JSONField(default=list)
+    countries = models.JSONField(
+        default=list,
+        help_text="List of country codes (e.g., ['US', 'UK'])"
+    )
+    courses = models.JSONField(
+        default=list,
+        help_text="List of courses (e.g., ['Computer Science', 'Data Science'])"
+    )
     experience_years = models.IntegerField(default=0)
     is_verified = models.BooleanField(default=False)
     verification_status = models.CharField(

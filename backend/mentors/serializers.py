@@ -41,7 +41,7 @@ class MentorProfileSerializer(serializers.ModelSerializer):
 class MentorProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = MentorDetails
-        fields = ['bio', 'phone', 'expertise', 'experience_years']
+        fields = ['bio', 'phone', 'expertise',  'countries', 'courses','experience_years']
 
 class ProfilePictureSerializer(serializers.ModelSerializer):
     class Meta:
@@ -53,3 +53,16 @@ class ProfilePictureSerializer(serializers.ModelSerializer):
                 'validators': [FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])]
             }
         }
+
+class PublicMentorSerializer(serializers.ModelSerializer):
+    educations = EducationSerializer(many=True, read_only=True)  
+    username = serializers.CharField(source='user.username', read_only=True)
+
+
+    class Meta:
+        model = MentorDetails
+        fields = [
+            'id','username', 'bio', 'expertise','countries','courses','experience_years', 
+            'educations', 'is_verified', 'profile_picture' 
+        ]
+        read_only_fields = ['is_verified']

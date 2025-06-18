@@ -62,7 +62,7 @@ class VerifyEmailView(generics.GenericAPIView):
             else:
                 StudentDetails.objects.create(user=user)
                 
-            response = Response({"status": "verified"}, status=status.HTTP_200_OK)
+            response = Response({"status": "verified",'role': user.role}, status=status.HTTP_200_OK)
             print("Hey hey this is the response")
             return set_jwt_cookies(response, user) 
 

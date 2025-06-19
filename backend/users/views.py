@@ -1,4 +1,4 @@
-from rest_framework import generics, status
+from rest_framework import generics, status,permissions
 from rest_framework.response import Response
 from users.redis_utils import store_unverified_user
 from users.tasks import send_verification_email
@@ -10,6 +10,9 @@ from users.models import User
 from users.utils import set_jwt_cookies  
 from mentors.models import MentorDetails
 from students.models import StudentDetails
+from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+
 
 class UserRegistrationView(generics.CreateAPIView):
     serializer_class = UserRegistrationSerializer
@@ -68,3 +71,23 @@ class VerifyEmailView(generics.GenericAPIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+
+
+class LogoutView(APIView):
+    def post(self, request):
+        refresh_token = request.COOKIES.get('refresh_token')
+
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except TokenError:
+                pass  
+
+  
+        response = Response({"message": "Logged out successfully."}, status=status.HTTP_200_OK)
+
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+
+        return response

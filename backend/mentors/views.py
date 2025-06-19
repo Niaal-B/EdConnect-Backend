@@ -16,6 +16,7 @@ from drf_spectacular.utils import extend_schema, OpenApiTypes, OpenApiParameter,
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import rest_framework as filters
 from django.db import models
+from django.db.models import Q
 
 
 
@@ -114,9 +115,6 @@ class DocumentUploadView(APIView):
         }, status=status.HTTP_201_CREATED)
 
 
-
-
-
 @extend_schema(
     parameters=[
         OpenApiParameter(
@@ -138,6 +136,12 @@ class DocumentUploadView(APIView):
             description='Maximum years of experience'
         ),
         OpenApiParameter(
+            name='search',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='Search by name, bio, or expertise'
+        ),
+        OpenApiParameter(
             name='page',
             type=int,
             location=OpenApiParameter.QUERY,
@@ -147,43 +151,73 @@ class DocumentUploadView(APIView):
 )
 class PublicMentorListView(ListAPIView):
     """
-    Simple public API to list verified mentors with:
+    Enhanced public API to list verified mentors with:
     - Pagination (10 per page)
-    - Basic expertise filtering
+    - Search functionality (name, bio, expertise)
+    - Expertise filtering
+    - Experience range filtering
     - Error handling
     
     Example requests:
-    GET /api/mentors/                          # All mentors (page 1)
-    GET /api/mentors/?page=2                   # Page 2
-    GET /api/mentors/?expertise=python         # Filter by expertise
-    GET /api/mentors/?experience_min=5         # 5+ years experience
+    GET /api/mentors/                                    # All mentors (page 1)
+    GET /api/mentors/?page=2                             # Page 2
+    GET /api/mentors/?expertise=python                   # Filter by expertise
+    GET /api/mentors/?experience_min=5                   # 5+ years experience
+    GET /api/mentors/?search=machine learning            # Search functionality
+    GET /api/mentors/?search=john&expertise=python       # Combined search and filter
     """
     
     serializer_class = PublicMentorSerializer
     
     def get_queryset(self):
         try:
-            queryset = MentorDetails.objects.filter(is_verified=True)
+            queryset = MentorDetails.objects.filter(is_verified=True).select_related('user')
             
-            # 1. Filter by expertise (case-insensitive partial match)
-            expertise = self.request.query_params.get('expertise')
+            # 1. Search functionality - searches across username, bio, and expertise
+            search_query = self.request.query_params.get('search', '').strip()
+            if search_query:
+                search_terms = search_query.split()
+                search_q = Q()
+                
+                for term in search_terms:
+                    # Search in username (from related User model)
+                    search_q |= Q(user__username__icontains=term)
+                    # Search in bio
+                    search_q |= Q(bio__icontains=term)
+                    # Search in expertise (assuming it's a text field or JSON field)
+                    search_q |= Q(expertise__icontains=term)
+                
+                queryset = queryset.filter(search_q)
+            
+            # 2. Filter by expertise (case-insensitive partial match)
+            expertise = self.request.query_params.get('expertise', '').strip()
             if expertise:
                 queryset = queryset.filter(expertise__icontains=expertise)
             
-            # 2. Filter by minimum experience
+            # 3. Filter by minimum experience
             exp_min = self.request.query_params.get('experience_min')
             if exp_min:
-                queryset = queryset.filter(experience_years__gte=int(exp_min))
+                try:
+                    exp_min_int = int(exp_min)
+                    queryset = queryset.filter(experience_years__gte=exp_min_int)
+                except ValueError:
+                    pass  # Ignore invalid values
             
-            # 3. Filter by maximum experience
+            # 4. Filter by maximum experience
             exp_max = self.request.query_params.get('experience_max')
             if exp_max:
-                queryset = queryset.filter(experience_years__lte=int(exp_max))
+                try:
+                    exp_max_int = int(exp_max)
+                    queryset = queryset.filter(experience_years__lte=exp_max_int)
+                except ValueError:
+                    pass  # Ignore invalid values
             
-            return queryset.order_by('-experience_years')  # Sort by most experienced first
+            # Order by experience (most experienced first) and then by username
+            return queryset.order_by('-experience_years', 'user__username').distinct()
             
-        except ValueError:
-            # Handles invalid number inputs (e.g. experience_min=abc)
+        except Exception as e:
+            # Log the error in production
+            print(f"Error in queryset: {str(e)}")
             return MentorDetails.objects.none()
     
     def list(self, request, *args, **kwargs):
@@ -191,19 +225,62 @@ class PublicMentorListView(ListAPIView):
             # Get the base response from DRF's ListAPIView
             response = super().list(request, *args, **kwargs)
             
-            # Add custom response format if needed
-            response.data = {
-                'success': True,
-                'mentors': response.data['results'],  # Paginated results
-                'total': response.data['count'],       # Total mentors count
-                'page': int(request.query_params.get('page', 1))
-            }
-            return response
+            # Get current page number
+            page_number = int(request.query_params.get('page', 1))
             
-        except Exception as e:
+            # Custom response format to match frontend expectations
+            custom_response = {
+                'success': True,
+                'mentors': response.data['results'],
+                'total': response.data['count'],
+                'page': page_number,
+                'has_next': response.data['next'] is not None,
+                'has_previous': response.data['previous'] is not None,
+                'next_page': page_number + 1 if response.data['next'] else None,
+                'previous_page': page_number - 1 if response.data['previous'] else None,
+            }
+            
+            # Add search/filter info if present
+            search_query = request.query_params.get('search', '').strip()
+            expertise = request.query_params.get('expertise', '').strip()
+            exp_min = request.query_params.get('experience_min')
+            exp_max = request.query_params.get('experience_max')
+            
+            filters_applied = []
+            if search_query:
+                filters_applied.append(f"search: '{search_query}'")
+            if expertise:
+                filters_applied.append(f"expertise: '{expertise}'")
+            if exp_min:
+                filters_applied.append(f"min_experience: {exp_min}")
+            if exp_max:
+                filters_applied.append(f"max_experience: {exp_max}")
+            
+            if filters_applied:
+                custom_response['filters_applied'] = filters_applied
+                custom_response['message'] = f"Found {response.data['count']} mentors matching your criteria"
+            else:
+                custom_response['message'] = f"Found {response.data['count']} verified mentors"
+            
+            return Response(custom_response, status=status.HTTP_200_OK)
+            
+        except ValueError as e:
             return Response(
-                {'success': False, 'error': str(e)},
+                {
+                    'success': False, 
+                    'error': 'Invalid page number provided',
+                    'mentors': [],
+                    'total': 0
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-
+        except Exception as e:
+            return Response(
+                {
+                    'success': False, 
+                    'error': str(e),
+                    'mentors': [],
+                    'total': 0
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

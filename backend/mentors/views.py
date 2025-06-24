@@ -1,11 +1,12 @@
 from rest_framework.views import APIView
 from .serializers import (MentorLoginSerializer,MentorProfileSerializer,ProfilePictureSerializer,
-VerificationDocumentSerializer,MentorProfileUpdateSerializer,PublicMentorSerializer)
+VerificationDocumentSerializer,MentorProfileUpdateSerializer,PublicMentorSerializer,
+SlotSerializer)
 from rest_framework.response import Response
 from rest_framework import status,permissions
 from users.utils import set_jwt_cookies
-from rest_framework.generics import GenericAPIView,RetrieveUpdateAPIView,ListAPIView
-from mentors.models import MentorDetails
+from rest_framework.generics import GenericAPIView,RetrieveUpdateAPIView,ListAPIView,ListCreateAPIView,UpdateAPIView
+from mentors.models import MentorDetails,Slot
 from auth.authentication import CookieJWTAuthentication
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser,FormParser,JSONParser
@@ -284,3 +285,35 @@ class PublicMentorListView(ListAPIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class MentorSlotListCreateView(ListCreateAPIView):
+    serializer_class = SlotSerializer
+    authentication_classes = [CookieJWTAuthentication]  
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Slot.objects.filter(mentor=self.request.user).order_by('-start_time')
+
+    def perform_create(self, serializer):
+        serializer.save(mentor=self.request.user)
+
+
+class MentorSlotCancelView(UpdateAPIView):
+    serializer_class = SlotSerializer
+    authentication_classes = [CookieJWTAuthentication]  
+    permission_classes = [IsAuthenticated]
+    queryset = Slot.objects.all()
+
+    def patch(self, request, *args, **kwargs):
+        slot = self.get_object()
+
+        if slot.mentor != request.user:
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+        if slot.status == "booked":
+            return Response({"error": "Cannot cancel a booked slot"}, status=status.HTTP_400_BAD_REQUEST)
+
+        slot.status = "cancelled"
+        slot.save()
+        return Response({"success": "Slot cancelled successfully"}, status=status.HTTP_200_OK)

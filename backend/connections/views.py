@@ -65,6 +65,7 @@ class PendingRequestsView(generics.ListAPIView):
 
 
 class ManageConnectionStatus(APIView):
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def patch(self, request, pk):
@@ -80,3 +81,34 @@ class ManageConnectionStatus(APIView):
         connection.status = status_choice
         connection.save()
         return Response(ConnectionSerializer(connection).data)
+
+
+class ListConnectionsView(generics.ListAPIView):
+    serializer_class = ConnectionSerializer
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'student':
+            return Connection.objects.filter(student=user)
+        elif user.role == 'mentor':
+            return Connection.objects.filter(mentor=user)
+        return Connection.objects.none()
+
+
+class CancelConnectionView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            connection = Connection.objects.get(pk=pk, student=request.user)
+        except Connection.DoesNotExist:
+            return Response({'detail': 'Connection not found or not owned by you.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if connection.status != 'pending':
+            return Response({'detail': 'Only pending requests can be cancelled.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        connection.delete()
+        return Response({'detail': 'Connection request cancelled successfully.'}, status=status.HTTP_204_NO_CONTENT)

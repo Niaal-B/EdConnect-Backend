@@ -7,7 +7,9 @@ urlpatterns = [
     path('mentors/', include('mentors.urls')),
     path('students/',include('students.urls')),
     path('auth/',include('auth.urls')),
-    path('admin/',include('admin.urls'))
+    path('admin/',include('admin.urls')),
+    path('connections/',include('connections.urls'))
+    
 
 
 ]

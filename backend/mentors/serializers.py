@@ -64,7 +64,7 @@ class PublicMentorSerializer(serializers.ModelSerializer):
     class Meta:
         model = MentorDetails
         fields = [
-            'id','username', 'bio', 'expertise','countries','courses','experience_years', 
+            'id','username','user_id', 'bio', 'expertise','countries','courses','experience_years', 
             'educations', 'is_verified', 'profile_picture' 
         ]
         read_only_fields = ['is_verified']

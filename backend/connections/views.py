@@ -2,7 +2,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from connections.models import Connection
-from .serializers import ConnectionSerializer,ConnectionRequestSerializer
+from .serializers import ConnectionSerializer,ConnectionRequestSerializer,ConnectionWithStudentSerializer
 from auth.authentication import CookieJWTAuthentication
 from drf_spectacular.utils import extend_schema
 from django.shortcuts import get_object_or_404
@@ -56,7 +56,7 @@ class RequestConnectionView(APIView):
 
 
 class PendingRequestsView(generics.ListAPIView):
-    serializer_class = ConnectionSerializer
+    serializer_class = ConnectionWithStudentSerializer
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
@@ -69,8 +69,13 @@ class ManageConnectionStatus(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def patch(self, request, pk):
+        user = request.user
+
+        if user.role != 'mentor':
+            return Response({'detail': 'Only mentors can update connection status.'}, status=403)
+
         try:
-            connection = Connection.objects.get(pk=pk, mentor=request.user)
+            connection = Connection.objects.get(pk=pk, mentor=user)
         except Connection.DoesNotExist:
             return Response({'detail': 'Connection not found.'}, status=404)
 
@@ -81,6 +86,7 @@ class ManageConnectionStatus(APIView):
         connection.status = status_choice
         connection.save()
         return Response(ConnectionSerializer(connection).data)
+
 
 
 class ListConnectionsView(generics.ListAPIView):

@@ -1,5 +1,7 @@
 from django.urls import path
-from mentors.views import MentorLoginView,MentorProfileView,ProfilePictureView,DocumentUploadView,PublicMentorListView
+from mentors.views import (MentorLoginView,MentorProfileView,ProfilePictureView,DocumentUploadView,PublicMentorListView,MentorSlotListCreateView,
+MentorSlotCancelView
+)
 
 urlpatterns = [
     path('login/',MentorLoginView.as_view(),name='mentor-login'),
@@ -7,6 +9,8 @@ urlpatterns = [
     path('profile/picture/', ProfilePictureView.as_view(), name='mentor-profile-picture'),
     path('documents/', DocumentUploadView.as_view(), name='mentor-documents'),
     path('mentors/public/', PublicMentorListView.as_view(), name='public-mentors'),
+    path('slots/', MentorSlotListCreateView.as_view(), name='mentor-slot-list-create'),
+    path('slots/<int:pk>/cancel/', MentorSlotCancelView.as_view(), name='mentor-slot-cancel'),
 
 
     ]

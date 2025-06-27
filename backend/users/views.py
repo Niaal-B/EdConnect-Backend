@@ -67,8 +67,10 @@ class VerifyEmailView(generics.GenericAPIView):
                 
             response = Response({"status": "verified",'role': user.role}, status=status.HTTP_200_OK)
             print("Hey hey this is the response")
-            return set_jwt_cookies(response, user) 
-
+            return Response({
+            "message": "User registered successfully. OTP sent to email.",
+        }, status=status.HTTP_201_CREATED)
+        
         except Exception as e:
             return Response({"error": str(e)}, status=400)
 

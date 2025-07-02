@@ -1,7 +1,7 @@
 from django.urls import path
-from connections.views import (RequestConnectionView, PendingRequestsView, ManageConnectionStatus,ListConnectionsView,
-CancelConnectionView
-)
+from connections.views import (RequestConnectionView, PendingRequestsView, ManageConnectionStatus
+                                ,ListConnectionsView,CancelConnectionView,MyMentorsView
+                                )
 
 urlpatterns = [
 
@@ -9,7 +9,9 @@ urlpatterns = [
     path('request/', RequestConnectionView.as_view(), name='connection-request'),
     path('pending/', PendingRequestsView.as_view(), name='pending-requests'),
     path('<int:pk>/', ManageConnectionStatus.as_view(), name='manage-connection'),
-    path('<int:pk>/cancel/', CancelConnectionView.as_view(), name='cancel-connection'),  # ← NEW
+    path('<int:pk>/cancel/', CancelConnectionView.as_view(), name='cancel-connection'),
+    path('my-mentors/', MyMentorsView.as_view(), name='my-mentors'),
+
 
 
 ]

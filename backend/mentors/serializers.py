@@ -59,7 +59,7 @@ class ProfilePictureSerializer(serializers.ModelSerializer):
 class PublicMentorSerializer(serializers.ModelSerializer):
     educations = EducationSerializer(many=True, read_only=True)  
     username = serializers.CharField(source='user.username', read_only=True)
-
+    
 
     class Meta:
         model = MentorDetails
@@ -100,3 +100,10 @@ class SlotSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['mentor'] = self.context['request'].user
         return super().create(validated_data)
+
+
+class SlotReadOnlySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Slot
+        fields = ['id', 'start_time', 'end_time', 'fee', 'timezone', 'status']
+        read_only_fields = fields

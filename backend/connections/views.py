@@ -2,7 +2,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from connections.models import Connection
-from .serializers import ConnectionSerializer,ConnectionRequestSerializer,ConnectionWithStudentSerializer
+from .serializers import ConnectionSerializer,ConnectionRequestSerializer,ConnectionWithStudentSerializer,MentorConnectionSerializer
 from auth.authentication import CookieJWTAuthentication
 from drf_spectacular.utils import extend_schema
 from django.shortcuts import get_object_or_404
@@ -118,3 +118,18 @@ class CancelConnectionView(APIView):
 
         connection.delete()
         return Response({'detail': 'Connection request cancelled successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+
+class MyMentorsView(generics.ListAPIView):
+    serializer_class = MentorConnectionSerializer
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return (
+            Connection.objects
+            .filter(student=user, status='accepted')
+            .select_related('mentor', 'mentor__mentor_profile')
+            .prefetch_related('mentor__slots')  
+        )

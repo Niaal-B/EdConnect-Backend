@@ -9,6 +9,8 @@ click==8.2.0
 click-didyoumean==0.3.1
 click-plugins==1.1.1
 click-repl==0.3.0
+channels
+daphne
 Django==5.2.1
 django-cors-headers==4.7.0
 django-redis==5.4.0

@@ -69,7 +69,7 @@ class Slot(models.Model):
         ("completed", "Completed"),
     ]
 
-    mentor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    mentor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name='slots')
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     fee = models.DecimalField(max_digits=7, decimal_places=2)

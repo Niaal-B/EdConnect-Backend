@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'storages', 
+    'channels',
     'api',
     'drf_yasg',
     'drf_spectacular',
@@ -44,6 +45,7 @@ INSTALLED_APPS = [
     'mentors',
     'students',
     'connections',
+    'chat_app',
     
 
 ]
@@ -65,6 +67,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
 ]
+
+ASGI_APPLICATION = 'config.asgi.application'
+
 
 
 CORS_ALLOWED_ORIGINS = [
@@ -92,8 +97,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 
 DATABASES = {
@@ -108,8 +111,19 @@ DATABASES = {
 }
 
 
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.pubsub.RedisPubSubChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis_server", 6379)], 
+        },
+    },
+}
+
+import logging
+logging.getLogger('channels_redis').setLevel(logging.WARNING)
+
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {

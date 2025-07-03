@@ -19,4 +19,4 @@ COPY . .
 RUN mkdir -p /app/staticfiles
 
 # Run Django server using Gunicorn (Production-ready)
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["daphne", "config.asgi:application", "-b", "0.0.0.0", "-p", "8000"]

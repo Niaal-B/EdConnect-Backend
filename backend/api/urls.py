@@ -8,7 +8,8 @@ urlpatterns = [
     path('students/',include('students.urls')),
     path('auth/',include('auth.urls')),
     path('admin/',include('admin.urls')),
-    path('connections/',include('connections.urls'))
+    path('connections/',include('connections.urls')),
+    path('chat/',include('chat_app.urls'))
     
 
 

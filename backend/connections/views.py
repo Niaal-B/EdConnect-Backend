@@ -2,12 +2,13 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from connections.models import Connection
-from .serializers import ConnectionSerializer,ConnectionRequestSerializer,ConnectionWithStudentSerializer,MentorConnectionSerializer
+from .serializers import ConnectionSerializer,ConnectionRequestSerializer,ConnectionWithStudentSerializer,MentorConnectionSerializer,StudentConnectionSerializer
 from auth.authentication import CookieJWTAuthentication
 from drf_spectacular.utils import extend_schema
 from django.shortcuts import get_object_or_404
 from users.models import User
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from chat_app.models import ChatRoom
 
 
 
@@ -83,6 +84,13 @@ class ManageConnectionStatus(APIView):
         if status_choice not in ['accepted', 'rejected']:
             return Response({'detail': 'Invalid status.'}, status=400)
 
+        if status_choice == 'accepted' and connection.status != 'accepted':
+                chat_room, created = ChatRoom.objects.get_or_create(
+                    student=connection.student,
+                    mentor=connection.mentor
+                )
+
+
         connection.status = status_choice
         connection.save()
         return Response(ConnectionSerializer(connection).data)
@@ -133,3 +141,15 @@ class MyMentorsView(generics.ListAPIView):
             .select_related('mentor', 'mentor__mentor_profile')
             .prefetch_related('mentor__slots')  
         )
+
+class MyStudentsView(generics.ListAPIView):
+    serializer_class = StudentConnectionSerializer
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return (
+            Connection.objects
+            .filter(mentor=user, status='accepted')
+            .select_related('student', 'student__student_profile'))

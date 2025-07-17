@@ -4,6 +4,12 @@ from mentors.models import MentorDetails,Education,VerificationDocument,Slot
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 from datetime import timedelta
+from users.models import User
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User 
+        fields = ['id', 'email', 'username', 'role'] 
 
 class MentorLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -34,6 +40,7 @@ class VerificationDocumentSerializer(serializers.ModelSerializer):
 class MentorProfileSerializer(serializers.ModelSerializer):
     educations = EducationSerializer(many=True, read_only=True)
     documents = VerificationDocumentSerializer(many=True, read_only=True)
+    user = UserSerializer(read_only=True)
     
     class Meta:
         model = MentorDetails

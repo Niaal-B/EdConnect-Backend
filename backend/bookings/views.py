@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST   
 from django.http import JsonResponse, HttpResponse
+from django.db.models import Q
 
 
 from bookings.models import Booking
@@ -17,6 +18,7 @@ from bookings.serializers import BookingSerializer
 from mentors.models import Slot
 from users.models import User
 from rest_framework.views import APIView
+
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -124,6 +126,30 @@ class BookingStatusAPIView(APIView):
 
         serializer = BookingSerializer(booking)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class StudentBookingsAPIView(generics.ListAPIView):
+    serializer_class = BookingSerializer
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Booking.objects.filter(
+            Q(student=user) &
+            Q(status__in=['CONFIRMED']) & 
+            Q(payment_status__in=['PAID'])
+        ).select_related('slot__mentor').order_by('-created_at')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if not queryset.exists():
+            return Response({"message": "No confirmed bookings found for this student."}, status=status.HTTP_200_OK)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)        
+
+
 
 
 

@@ -1,6 +1,6 @@
 from django.urls import path
 from connections.views import (RequestConnectionView, PendingRequestsView, ManageConnectionStatus
-                                ,ListConnectionsView,CancelConnectionView,MyMentorsView
+                                ,ListConnectionsView,CancelConnectionView,MyMentorsView,MyStudentsView
                                 )
 
 urlpatterns = [
@@ -11,6 +11,8 @@ urlpatterns = [
     path('<int:pk>/', ManageConnectionStatus.as_view(), name='manage-connection'),
     path('<int:pk>/cancel/', CancelConnectionView.as_view(), name='cancel-connection'),
     path('my-mentors/', MyMentorsView.as_view(), name='my-mentors'),
+    path('my-students/', MyStudentsView.as_view(), name='my-students'),
+
 
 
 

@@ -14,7 +14,7 @@ from django.db.models import Q
 
 
 from bookings.models import Booking
-from bookings.serializers import BookingSerializer
+from bookings.serializers import BookingSerializer,MentorBookingsSerializer
 from mentors.models import Slot
 from users.models import User
 from rest_framework.views import APIView
@@ -148,6 +148,16 @@ class StudentBookingsAPIView(generics.ListAPIView):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)        
+
+class MentorBookingsAPIView(generics.ListAPIView):
+    serializer_class = MentorBookingsSerializer
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Booking.objects.filter(
+            mentor=user,status__in=['CONFIRMED'],payment_status__in=['PAID']).select_related('student').order_by('-created_at')
 
 
 

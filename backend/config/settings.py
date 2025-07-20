@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'students',
     'connections',
     'chat_app',
+    'bookings',
+
     
 
 ]
@@ -280,3 +282,10 @@ CACHES = {
 
 
 REDIS_USER_TTL = 600
+
+
+# Stripe Configuration
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_fallback_secret_key')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', 'pk_test_fallback_publishable_key')
+
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')

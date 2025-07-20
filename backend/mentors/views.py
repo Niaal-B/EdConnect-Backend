@@ -291,9 +291,10 @@ class MentorSlotListCreateView(ListCreateAPIView):
     serializer_class = SlotSerializer
     authentication_classes = [CookieJWTAuthentication]  
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
-        return Slot.objects.filter(mentor=self.request.user).order_by('-start_time')
+        return Slot.objects.filter(mentor=self.request.user).order_by('start_time')
 
     def perform_create(self, serializer):
         serializer.save(mentor=self.request.user)

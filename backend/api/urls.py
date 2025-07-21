@@ -1,5 +1,5 @@
 from django.urls import path,include
-from .views import hello_api
+from .views import hello_api,GoogleLoginCallbackView
 
 urlpatterns = [
     path('hello/', hello_api),
@@ -10,7 +10,9 @@ urlpatterns = [
     path('admin/',include('admin.urls')),
     path('connections/',include('connections.urls')),
     path('chat/',include('chat_app.urls')),
-    path('bookings/',include('bookings.urls'))
+    path('bookings/',include('bookings.urls')),
+    path('auth/google/callback/', GoogleLoginCallbackView.as_view(), name='google_login_callback'),
+
     
 
 

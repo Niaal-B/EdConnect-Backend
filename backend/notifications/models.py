@@ -9,6 +9,7 @@ class Notification(models.Model):
     NOTIFICATION_TYPES = [
         ("connection_request_received", "Connection Request Received"), 
         ("connection_request_accepted", "Connection Request Accepted"), 
+        ("connection_request_cancelled","Connection Request Cancelled")
     ]
 
     notification_type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)

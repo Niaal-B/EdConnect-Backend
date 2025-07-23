@@ -78,4 +78,3 @@ def create_and_send_notification(recipient_id, sender_id, notification_type, mes
             'notification_data': notification_data
         }
     )
-    print(f"Notification created and sent to channel layer for user {recipient.username} (type: {notification_type}).")

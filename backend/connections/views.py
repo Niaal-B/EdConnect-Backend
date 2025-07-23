@@ -9,6 +9,9 @@ from django.shortcuts import get_object_or_404
 from users.models import User
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from chat_app.models import ChatRoom
+from asgiref.sync import sync_to_async 
+from notifications.consumers import create_and_send_notification
+
 
 
 
@@ -46,6 +49,16 @@ class RequestConnectionView(APIView):
                 return Response({'detail': 'Connection already exists.'}, status=status.HTTP_400_BAD_REQUEST)
 
             connection = Connection.objects.create(student=student, mentor=mentor)
+
+            sync_to_async(create_and_send_notification)(
+                recipient_id=mentor.id,
+                sender_id=student.id,
+                notification_type='connection_request_received',
+                message=f"{student.username} has sent you a connection request.",
+                related_object_id=connection.id,
+                related_object_type='Connection' 
+            )
+
             return Response(ConnectionSerializer(connection).data, status=status.HTTP_201_CREATED)
 
         except ValidationError as e:
@@ -84,8 +97,20 @@ class ManageConnectionStatus(APIView):
         if status_choice not in ['accepted', 'rejected']:
             return Response({'detail': 'Invalid status.'}, status=400)
 
+        old_status = connection.status
         connection.status = status_choice
         connection.save()
+
+        if status_choice == 'accepted' and old_status != 'accepted':
+            sync_to_async(create_and_send_notification)(
+                recipient_id=connection.student.id,
+                sender_id=user.id, 
+                notification_type='connection_request_accepted',
+                message=f"{user.username} has accepted your connection request!",
+                related_object_id=connection.id,
+                related_object_type='Connection'
+            )
+
         return Response(ConnectionSerializer(connection).data)
 
 
@@ -118,6 +143,16 @@ class CancelConnectionView(APIView):
             return Response({'detail': 'Only pending requests can be cancelled.'}, status=status.HTTP_400_BAD_REQUEST)
 
         connection.delete()
+        
+        sync_to_async(create_and_send_notification)(
+            recipient_id=connection.mentor.id,
+            sender_id=request.user.id,
+            notification_type='connection_request_cancelled',
+            message=f"{request.user.username} cancelled their connection request.",
+            related_object_id=connection.id,
+            related_object_type='Connection'
+        )
+
         return Response({'detail': 'Connection request cancelled successfully.'}, status=status.HTTP_204_NO_CONTENT)
 
 

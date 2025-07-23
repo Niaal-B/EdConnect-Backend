@@ -84,13 +84,6 @@ class ManageConnectionStatus(APIView):
         if status_choice not in ['accepted', 'rejected']:
             return Response({'detail': 'Invalid status.'}, status=400)
 
-        if status_choice == 'accepted' and connection.status != 'accepted':
-                chat_room, created = ChatRoom.objects.get_or_create(
-                    student=connection.student,
-                    mentor=connection.mentor
-                )
-
-
         connection.status = status_choice
         connection.save()
         return Response(ConnectionSerializer(connection).data)

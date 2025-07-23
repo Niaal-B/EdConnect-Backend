@@ -1,6 +1,5 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
-from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 from channels.layers import get_channel_layer
 from django.db.models.signals import post_save
@@ -34,7 +33,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 self.notification_group_name,
                 self.channel_name
             )
-            print(f"User {self.user.username} disconnected from notifications WebSocket.")
 
     async def receive(self, text_data):
         #For Futre enhancement
@@ -48,6 +46,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             'notification': notification_data
         }))
         print(f"Sent real-time notification to {self.user.username}: {notification_data['message']}")
+
 
 # --- Helper function to create and send notifications ---
 @sync_to_async

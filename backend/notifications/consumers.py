@@ -33,6 +33,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 self.notification_group_name,
                 self.channel_name
             )
+            print(f"User {self.user.username} disconnected from notifications WebSocket.")
 
     async def receive(self, text_data):
         #For Futre enhancement
@@ -47,33 +48,3 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         }))
         print(f"Sent real-time notification to {self.user.username}: {notification_data['message']}")
 
-
-# --- Helper function to create and send notifications ---
-@sync_to_async
-def create_and_send_notification(recipient_id, sender_id, notification_type, message, related_object_id=None, related_object_type=None):
-    recipient = User.objects.get(id=recipient_id)
-    sender = User.objects.get(id=sender_id) if sender_id else None
-
-    notification = Notification.objects.create(
-        recipient=recipient,
-        sender=sender,
-        notification_type=notification_type,
-        message=message,
-        related_object_id=related_object_id,
-        related_object_type=related_object_type
-    )
-
-    serializer = NotificationSerializer(notification) 
-    notification_data = serializer.data
-
-    channel_layer = get_channel_layer()
-
-    group_name = f"user_{recipient.id}_notifications"
-
-    sync_to_async(channel_layer.group_send)(
-        group_name,
-        {
-            'type': 'send_notification', 
-            'notification_data': notification_data
-        }
-    )

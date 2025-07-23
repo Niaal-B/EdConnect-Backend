@@ -33,12 +33,14 @@ def send_realtime_notification_task(self, recipient_id, sender_id, notification_
         channel_layer = get_channel_layer()
         group_name = f"user_{recipient.id}_notifications"
 
-        sync_to_async(channel_layer.group_send)(
-            group_name,
-            {
-                'type': 'send_notification', 
-                'notification_data': notification_data
-            }
+        asyncio.run(
+            channel_layer.group_send(
+                group_name,
+                {
+                    'type': 'send_notification',
+                    'notification_data': notification_data
+                }
+            )
         )
 
     except Exception as exc:

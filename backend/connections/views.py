@@ -10,7 +10,6 @@ from users.models import User
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from chat_app.models import ChatRoom
 from asgiref.sync import sync_to_async 
-from notifications.consumers import create_and_send_notification
 from notifications.tasks import send_realtime_notification_task 
 
 

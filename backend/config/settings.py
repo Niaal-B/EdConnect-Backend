@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'connections',
     'chat_app',
     'bookings',
+    'notifications',
 
     
 

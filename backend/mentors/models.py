@@ -9,6 +9,8 @@ class MentorDetails(models.Model):
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
         ('needs_revision', 'Needs Revision'),
+        ('INCOMPLETE', 'Incomplete Setup')
+
     ]
     
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mentor_profile')

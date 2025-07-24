@@ -20,7 +20,7 @@ from bookings.serializers import BookingSerializer,MentorBookingsSerializer
 from mentors.models import Slot
 from users.models import User
 from rest_framework.views import APIView
-
+from notifications.tasks import send_realtime_notification_task
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -310,10 +310,8 @@ class BookingCancelAPIView(generics.UpdateAPIView):
                 slot.status = 'unavailable' 
                 slot.save()
 
-                # need to add the task to remove  the event in the calendar
+                #need to create task to remove the event from calendar
                 #need to create task to send notification
-
-                print(f"Dispatched task to update/remove calendar event for booking {booking.id}.")
 
 
                 return Response({

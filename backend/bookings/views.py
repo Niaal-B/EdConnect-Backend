@@ -11,6 +11,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST   
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Q
+from django.utils import timezone 
+
 
 
 from bookings.models import Booking
@@ -230,3 +232,114 @@ def stripe_webhook(request):
         pass
 
     return HttpResponse(status=200)
+
+
+class BookingCancelAPIView(generics.UpdateAPIView):
+    queryset = Booking.objects.all()
+    serializer_class = BookingSerializer
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['patch']
+
+    def patch(self, request, *args, **kwargs):
+        booking = self.get_object()
+
+        if booking.status != 'CONFIRMED' or booking.payment_status != 'PAID':
+            return Response({"detail": "Only confirmed and paid bookings can be cancelled."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        cancelling_user = request.user
+        if not (cancelling_user == booking.student or cancelling_user == booking.mentor):
+            return Response({"detail": "You do not have permission to cancel this booking."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        now = timezone.now()
+        if now >= booking.booked_end_time:
+            return Response({"detail": "Cannot cancel a session that has already ended or passed."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        refund_amount_cents = 0
+        booking_new_status = ''
+        cancellation_reason = request.data.get('reason', 'N/A')
+
+        with transaction.atomic():
+            try:
+                slot = Slot.objects.select_for_update().get(id=booking.slot.id)
+
+                if cancelling_user == booking.student:
+                    time_until_session = booking.booked_start_time - now
+                    hours_until_session = time_until_session.total_seconds() / 3600
+
+                    if hours_until_session >= 24:
+                        refund_amount_cents = int(booking.booked_fee * 100)
+                        booking_new_status = 'CANCELED_BY_STUDENT_FULL_REFUND'
+                    else:
+                        refund_amount_cents = 0
+                        booking_new_status = 'CANCELED_BY_STUDENT_NO_REFUND'
+
+                elif cancelling_user == booking.mentor:
+                    refund_amount_cents = int(booking.booked_fee * 100)
+                    booking_new_status = 'CANCELED_BY_MENTOR'
+
+                if refund_amount_cents > 0:
+                    if not booking.stripe_payment_intent_id:
+                        raise ValueError("Booking has no payment intent ID for refund.")
+                    
+                    refund = stripe.Refund.create(
+                        payment_intent=booking.stripe_payment_intent_id,
+                        amount=refund_amount_cents,
+                        reason='requested_by_customer',
+                        metadata={
+                            'booking_id': str(booking.id),
+                            'cancelled_by_user_id': str(cancelling_user.id),
+                            'cancellation_reason': cancellation_reason,
+                            'refund_type': booking_new_status
+                        }
+                    )
+                    booking.stripe_refund_id = refund.id 
+                    booking.payment_status = 'REFUNDED' if refund.status == 'succeeded' else 'REFUND_FAILED' 
+                else:
+                    booking.payment_status = 'NO_REFUND'
+
+                booking.status = booking_new_status
+                booking.cancellation_reason = cancellation_reason 
+                booking.cancelled_by = cancelling_user 
+                booking.cancelled_at = now
+                booking.save()
+
+                slot.status = 'unavailable' 
+                slot.save()
+
+                # need to add the task to remove  the event in the calendar
+                #need to create task to send notification
+
+                print(f"Dispatched task to update/remove calendar event for booking {booking.id}.")
+
+
+                return Response({
+                    "message": "Booking cancelled successfully.",
+                    "booking_status": booking.status,
+                    "refund_amount": refund_amount_cents / 100.0,
+                    "stripe_refund_id": getattr(booking, 'stripe_refund_id', None)
+                }, status=status.HTTP_200_OK)
+
+            except Booking.DoesNotExist:
+                return Response({"detail": "Booking not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            except Slot.DoesNotExist:
+                return Response({"detail": "Associated slot not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            except stripe.error.StripeError as e:
+                return Response({"detail": f"Cancellation failed due to payment processing error: {e.user_message}"},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            except ValueError as e:
+                print(f"ValueError during cancellation for booking {booking.id}: {e}")
+                return Response({"detail": f"Cancellation error: {e}"},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return Response({"detail": "An unexpected error occurred during cancellation."},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)

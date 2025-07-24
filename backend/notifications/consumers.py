@@ -12,7 +12,11 @@ User = get_user_model()
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        print(f"DEBUG: WebSocket connection attempt initiated.")
         self.user = self.scope["user"] 
+
+        print(f"DEBUG: User object from scope: {self.user}")
+        print(f"DEBUG: Is user authenticated? {self.user.is_authenticated}")
 
         if self.user.is_authenticated:
             self.notification_group_name = f"user_{self.user.id}_notifications"

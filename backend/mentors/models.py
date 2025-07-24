@@ -67,6 +67,8 @@ class Slot(models.Model):
         ("booked", "Booked"),
         ("cancelled", "Cancelled by Mentor"),
         ("completed", "Completed"),
+        ('unavailable', 'Unavailable'),  
+
     ]
 
     mentor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name='slots')

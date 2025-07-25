@@ -35,6 +35,8 @@ class MentorDetails(models.Model):
     profile_picture = models.ImageField(upload_to='mentor_profile_pics/', blank=True, null=True)
     rejection_reason = models.TextField(blank=True, null=True)
     last_status_update = models.DateTimeField(auto_now=True)
+    stripe_account_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
+
 
     def __str__(self):
         return self.user.email

@@ -18,6 +18,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import rest_framework as filters
 from django.db import models
 from django.db.models import Q
+import stripe
+from django.conf import settings
 
 
 
@@ -318,3 +320,103 @@ class MentorSlotCancelView(UpdateAPIView):
         slot.status = "cancelled"
         slot.save()
         return Response({"success": "Slot cancelled successfully"}, status=status.HTTP_200_OK)
+
+
+class MentorStripeOnboardingView(APIView):
+    authentication_classes = [CookieJWTAuthentication]  
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        try:
+            mentor_profile = MentorDetails.objects.get(user=user)
+        except MentorDetails.DoesNotExist:
+            return Response(
+                {"detail": "Mentor profile not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        account_id = mentor_profile.stripe_account_id
+
+        try:
+            if not account_id:
+                account = stripe.Account.create(
+                    type='express',
+                    country='US', 
+                    email=user.email,
+                    capabilities={
+                        'card_payments': {'requested': True},
+                        'transfers': {'requested': True},
+                    },
+                    business_type='individual', 
+
+                    metadata={
+                        'edconnect_user_id': str(user.id),
+                        'edconnect_mentor_profile_id': str(mentor_profile.id),
+                    }
+                )
+                account_id = account.id
+                mentor_profile.stripe_account_id = account_id
+                mentor_profile.save()
+            else:
+                account = stripe.Account.retrieve(account_id)
+
+            account_link = stripe.AccountLink.create(
+                account=account_id,
+                refresh_url=f"{settings.PLATFORM_BASE_URL}/mentor/dashboard/earnings?refresh=true",
+                return_url=f"{settings.PLATFORM_BASE_URL}/mentor/dashboard/earnings?onboarding_success=true", # Redirect after successful onboarding
+                type='account_onboarding',
+            )
+            return Response({"url": account_link.url})
+
+        except stripe.error.StripeError as e:
+            return Response(
+                {"detail": f"Stripe error: {e.user_message}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception as e:
+            print(e)
+            return Response(
+                {"detail": "An unexpected error occurred during Stripe onboarding initiation."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def get(self, request):
+        user = request.user
+        try:
+            mentor_profile = MentorDetails.objects.get(user=user)
+        except MentorDetails.DoesNotExist:
+            return Response(
+                {"detail": "Mentor profile not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        account_id = mentor_profile.stripe_account_id
+        if not account_id:
+            return Response(
+                {"status": "not_onboarded", "detail": "Stripe account not linked."},
+                status=status.HTTP_200_OK
+            )
+
+        try:
+            account = stripe.Account.retrieve(account_id)
+            return Response({
+                "status": "onboarded",
+                "details_submitted": account.details_submitted,
+                "payouts_enabled": account.payouts_enabled,
+                "charges_enabled": account.charges_enabled, 
+                "requirements_due": account.requirements.past_due or account.requirements.eventually_due or account.requirements.currently_due,
+                "detail": "Stripe account linked."
+            })
+        except stripe.error.StripeError as e:
+            print(f"Stripe Error retrieving account: {e}")
+            return Response(
+                {"detail": f"Stripe error: {e.user_message}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception as e:
+            print(f"Server Error: {e}")
+            return Response(
+                {"detail": "An unexpected error occurred retrieving Stripe account status."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

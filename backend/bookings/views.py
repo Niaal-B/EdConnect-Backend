@@ -17,7 +17,7 @@ from django.utils import timezone
 
 from bookings.models import Booking
 from bookings.serializers import BookingSerializer,MentorBookingsSerializer
-from mentors.models import Slot
+from mentors.models import Slot,MentorDetails
 from users.models import User
 from rest_framework.views import APIView
 from notifications.tasks import send_realtime_notification_task
@@ -40,6 +40,13 @@ class BookingCreateAPIView(generics.CreateAPIView):
                 slot = Slot.objects.select_for_update().get(id=slot_id, status='available')
 
                 mentor = slot.mentor
+                print(mentor,"this is the mentor")
+                stripe_account_id = MentorDetails.objects.get(user=mentor).stripe_account_id
+                print(stripe_account_id)
+                if not stripe_account_id:
+                    return Response({"detail": "Mentor's Stripe account is not connected. They cannot receive payments."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
                 if request.user == mentor:
                     return Response({"detail": "Mentors cannot book their own slots."},
                                     status=status.HTTP_400_BAD_REQUEST)
@@ -62,13 +69,22 @@ class BookingCreateAPIView(generics.CreateAPIView):
                     f'{slot.end_time.strftime("%H:%M")} ({slot.timezone})'
                 )
 
+                total_amount_cents = int(slot.fee * 100)
+                platform_fee_cents = int(total_amount_cents * settings.PLATFORM_FEE_PERCENTAGE)
+
+                if platform_fee_cents >= total_amount_cents:
+                    return Response({"detail": "Calculated platform fee is greater than or equal to total amount."},
+                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
                 checkout_session = stripe.checkout.Session.create(
                     payment_method_types=['card'], 
                     line_items=[
                         {
                             'price_data': {
                                 'currency': 'usd', 
-                                'unit_amount': int(slot.fee * 100), 
+                                'unit_amount': total_amount_cents, 
                                 'product_data': {
                                     'name': product_name,
                                     'description': product_description,
@@ -80,6 +96,13 @@ class BookingCreateAPIView(generics.CreateAPIView):
                     mode='payment', 
                     success_url=f'http://localhost:3000/booking/success?session_id={{CHECKOUT_SESSION_ID}}',
                     cancel_url='http://localhost:3000/booking/cancel',
+
+                    payment_intent_data={
+                        'application_fee_amount': platform_fee_cents,
+                        'transfer_data': {
+                            'destination': stripe_account_id, 
+                        },
+                    },
 
                     client_reference_id=str(booking.id),
                     metadata={

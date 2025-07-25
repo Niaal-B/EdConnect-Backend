@@ -369,8 +369,8 @@ class MentorStripeOnboardingView(APIView):
 
             account_link = stripe.AccountLink.create(
                 account=account_id,
-                refresh_url=f"{settings.PLATFORM_BASE_URL}/mentor/dashboard/earnings?refresh=true",
-                return_url=f"{settings.PLATFORM_BASE_URL}/mentor/dashboard/earnings?onboarding_success=true", # Redirect after successful onboarding
+                refresh_url=f"{settings.PLATFORM_BASE_URL}/mentor/earnings?refresh=true",
+                return_url=f"{settings.PLATFORM_BASE_URL}/mentor/earnings?onboarding_success=true", 
                 type='account_onboarding',
             )
             return Response({"url": account_link.url})

@@ -7,6 +7,7 @@ from rest_framework import status,permissions
 from users.utils import set_jwt_cookies
 from rest_framework.generics import GenericAPIView,RetrieveUpdateAPIView,ListAPIView,ListCreateAPIView,UpdateAPIView
 from mentors.models import MentorDetails,Slot
+from bookings.models import Booking
 from auth.authentication import CookieJWTAuthentication
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser,FormParser,JSONParser
@@ -18,6 +19,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import rest_framework as filters
 from django.db import models
 from django.db.models import Q
+import stripe
+from django.conf import settings
+from django.utils import timezone
+import datetime
+import pytz
+from django.db.models import Sum, Count
+
 
 
 
@@ -318,3 +326,217 @@ class MentorSlotCancelView(UpdateAPIView):
         slot.status = "cancelled"
         slot.save()
         return Response({"success": "Slot cancelled successfully"}, status=status.HTTP_200_OK)
+
+
+class MentorStripeOnboardingView(APIView):
+    authentication_classes = [CookieJWTAuthentication]  
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        try:
+            mentor_profile = MentorDetails.objects.get(user=user)
+        except MentorDetails.DoesNotExist:
+            return Response(
+                {"detail": "Mentor profile not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        account_id = mentor_profile.stripe_account_id
+
+        try:
+            if not account_id:
+                account = stripe.Account.create(
+                    type='express',
+                    country='US', 
+                    email=user.email,
+                    capabilities={
+                        'card_payments': {'requested': True},
+                        'transfers': {'requested': True},
+                    },
+                    business_type='individual', 
+
+                    metadata={
+                        'edconnect_user_id': str(user.id),
+                        'edconnect_mentor_profile_id': str(mentor_profile.id),
+                    }
+                )
+                account_id = account.id
+                mentor_profile.stripe_account_id = account_id
+                mentor_profile.save()
+            else:
+                account = stripe.Account.retrieve(account_id)
+
+            account_link = stripe.AccountLink.create(
+                account=account_id,
+                refresh_url=f"{settings.PLATFORM_BASE_URL}/mentor/dashboard/earnings?refresh=true",
+                return_url=f"{settings.PLATFORM_BASE_URL}/mentor/dashboard/earnings?onboarding_success=true", # Redirect after successful onboarding
+                type='account_onboarding',
+            )
+            return Response({"url": account_link.url})
+
+        except stripe.error.StripeError as e:
+            return Response(
+                {"detail": f"Stripe error: {e.user_message}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception as e:
+            print(e)
+            return Response(
+                {"detail": "An unexpected error occurred during Stripe onboarding initiation."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def get(self, request):
+        user = request.user
+        try:
+            mentor_profile = MentorDetails.objects.get(user=user)
+        except MentorDetails.DoesNotExist:
+            return Response(
+                {"detail": "Mentor profile not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        account_id = mentor_profile.stripe_account_id
+        if not account_id:
+            return Response(
+                {"status": "not_onboarded", "detail": "Stripe account not linked."},
+                status=status.HTTP_200_OK
+            )
+
+        try:
+            account = stripe.Account.retrieve(account_id)
+            return Response({
+                "status": "onboarded",
+                "details_submitted": account.details_submitted,
+                "payouts_enabled": account.payouts_enabled,
+                "charges_enabled": account.charges_enabled, 
+                "requirements_due": account.requirements.past_due or account.requirements.eventually_due or account.requirements.currently_due,
+                "detail": "Stripe account linked."
+            })
+        except stripe.error.StripeError as e:
+            print(f"Stripe Error retrieving account: {e}")
+            return Response(
+                {"detail": f"Stripe error: {e.user_message}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception as e:
+            print(f"Server Error: {e}")
+            return Response(
+                {"detail": "An unexpected error occurred retrieving Stripe account status."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class MentorEarningsAPIView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+
+    def get(self,request,*args,**kwargs):
+        mentor = request.user 
+        Mentordetails = MentorDetails.objects.get(user=mentor)
+
+        if not hasattr(Mentordetails, 'stripe_account_id') or not Mentordetails.stripe_account_id:
+             return Response(
+                {"detail": "Stripe account not connected for this mentor."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            stripe_account_status = stripe.Account.retrieve(
+                Mentordetails.stripe_account_id
+            )
+            payouts_enabled = stripe_account_status.payouts_enabled
+            charges_enabled = stripe_account_status.charges_enabled
+            requirements_due = stripe_account_status.requirements.eventually_due    
+
+        except stripe.error.StripeError as e:
+            return Response(
+                {"detail": f"Error fetching Stripe account status: {e.user_message}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        total_balance_available = 0
+        total_balance_pending = 0
+  
+        try:
+            balance = stripe.Balance.retrieve(stripe_account=Mentordetails.stripe_account_id)
+            for b in balance['available']:
+                total_balance_available += b['amount']
+            for b in balance['pending']:
+                total_balance_pending += b['amount']
+
+        except stripe.error.StripeError as e:
+            pass 
+
+        total_earnings_cents = 0
+        monthly_earnings_cents = 0
+        
+        now = timezone.now()
+        start_of_current_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+        try:
+            transfers = stripe.Transfer.list(
+                destination=Mentordetails.stripe_account_id,
+                limit=100,
+            )
+
+            for transfer in transfers.auto_paging_iter(): 
+
+                transfer_created_dt = datetime.datetime.fromtimestamp(transfer.created, tz=pytz.utc)
+                total_earnings_cents += transfer.amount
+
+                if transfer_created_dt >= start_of_current_month:
+                    monthly_earnings_cents += transfer.amount
+
+        except stripe.error.StripeError as e:
+            pass
+
+        completed_sessions_count = Booking.objects.filter(
+            mentor=mentor,
+            status='CONFIRMED',
+            payment_status='PAID',
+            booked_end_time__lt=now
+        ).count()
+
+        average_session_fee = 0
+        total_fee_from_completed_sessions = Booking.objects.filter(
+            mentor=mentor,
+            status='CONFIRMED',
+            payment_status='PAID',
+            booked_end_time__lt=now
+        ).aggregate(Sum('booked_fee'))['booked_fee__sum']
+
+        if completed_sessions_count > 0 and total_fee_from_completed_sessions is not None:
+            average_session_fee = total_fee_from_completed_sessions / completed_sessions_count
+
+
+        response_data = {
+            'stripe_status': {
+                'status': 'onboarded', 
+                'details_submitted': True, 
+                'payouts_enabled': payouts_enabled,
+                'charges_enabled': charges_enabled,
+                'requirements_due': requirements_due, 
+                'detail': 'Stripe account status fetched.'
+            },
+
+            'totalEarnings': total_earnings_cents / 100.0,
+            'monthlyEarnings': monthly_earnings_cents / 100.0,
+            'pendingPayouts': total_balance_pending / 100.0,
+            'availableForPayout': total_balance_available / 100.0, 
+
+            'completedSessions': completed_sessions_count,
+            'averageSessionFee': average_session_fee,
+
+            'payoutSchedule': 'Weekly (every Friday)', 
+            'platformFee': settings.PLATFORM_FEE_PERCENTAGE * 100, 
+            'processingTime': '1-2 business days',
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+        

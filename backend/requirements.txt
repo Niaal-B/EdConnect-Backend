@@ -13,6 +13,7 @@ channels
 channels_redis 
 daphne
 Django==5.2.1
+django-allauth>=0.58.0
 django-cors-headers==4.7.0
 django-redis==5.4.0
 django-storages==1.14.6
@@ -22,6 +23,9 @@ drf-spectacular==0.28.0
 drf-yasg>=1.21.0
 django-filter>=23.2  
 gunicorn==23.0.0
+google-api-python-client>=2.127.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0 
 inflection==0.5.1
 jmespath==1.0.1
 jsonschema==4.23.0
@@ -35,6 +39,7 @@ PyJWT==2.9.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 PyYAML==6.0.2
+pytz
 redis==4.5.5
 referencing==0.36.2
 rpds-py==0.25.0

@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (BookingCreateAPIView,BookingStatusAPIView,stripe_webhook,StudentBookingsAPIView,
-                    MentorBookingsAPIView
+                    MentorBookingsAPIView,BookingCancelAPIView
                     )
 
 urlpatterns = [
@@ -10,6 +10,7 @@ urlpatterns = [
     path('stripe-webhook/', stripe_webhook, name='stripe-webhook'),
     path('student-bookings/', StudentBookingsAPIView.as_view(), name='student-bookings'), 
     path('mentor-bookings/', MentorBookingsAPIView.as_view(), name='student-bookings'), 
+    path('<uuid:pk>/cancel/', BookingCancelAPIView.as_view(), name='booking-cancel'),
 
 
 

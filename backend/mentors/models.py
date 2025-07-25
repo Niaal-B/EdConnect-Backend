@@ -9,6 +9,8 @@ class MentorDetails(models.Model):
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
         ('needs_revision', 'Needs Revision'),
+        ('INCOMPLETE', 'Incomplete Setup')
+
     ]
     
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mentor_profile')
@@ -33,6 +35,8 @@ class MentorDetails(models.Model):
     profile_picture = models.ImageField(upload_to='mentor_profile_pics/', blank=True, null=True)
     rejection_reason = models.TextField(blank=True, null=True)
     last_status_update = models.DateTimeField(auto_now=True)
+    stripe_account_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
+
 
     def __str__(self):
         return self.user.email
@@ -67,6 +71,8 @@ class Slot(models.Model):
         ("booked", "Booked"),
         ("cancelled", "Cancelled by Mentor"),
         ("completed", "Completed"),
+        ('unavailable', 'Unavailable'),  
+
     ]
 
     mentor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name='slots')

@@ -19,6 +19,8 @@ from django.contrib.auth.tokens import default_token_generator
 from users.tasks import send_reset_password_email
 from auth.serializers import ForgotPasswordSerializer,ResetPasswordSerializer
 from drf_yasg.utils import swagger_auto_schema
+from mentors.models import MentorDetails
+from students.models import StudentDetails
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,7 @@ class VerifyAuthView(GenericAPIView):
     permission_classes = [IsAuthenticated]  
     
     def get(self, request):
+
         
         
         return Response({
@@ -43,14 +46,30 @@ class CheckSessionView(GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+
         try:
+            user = request.user
+            profile_picture_url = None
+
+            # Fetch profile_picture based on role
+            if user.role == "mentor":
+                details = MentorDetails.objects.get(user=user)
+                if details.profile_picture:
+                    profile_picture_url = request.build_absolute_uri(details.profile_picture.url)
+
+            elif user.role == "student":
+                details = StudentDetails.objects.get(user=user)
+                if details.profile_picture:
+                    profile_picture_url = request.build_absolute_uri(details.profile_picture.url)
+
             response_data = {
-                "valid": True,  
+                "valid": True,
                 "user": {
-                    "id": request.user.id,  
-                    "email": request.user.email,
-                    "username": request.user.username,
-                    "role": request.user.role
+                    "id": user.id,
+                    "email": user.email,
+                    "username": user.username,
+                    "role": user.role,
+                    "profile_picture": profile_picture_url,
                 },
                 "message": "session is valid"
             }
@@ -59,11 +78,11 @@ class CheckSessionView(GenericAPIView):
         except Exception as e:
             return Response(
                 {
-                    'valid': False,  
+                    'valid': False,
                     "error": str(e),
                     'message': 'session validation Failed'
                 },
-                status=status.HTTP_401_UNAUTHORIZED  
+                status=status.HTTP_401_UNAUTHORIZED
             )
 
 

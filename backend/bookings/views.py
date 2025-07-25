@@ -11,14 +11,16 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST   
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Q
+from django.utils import timezone 
+
 
 
 from bookings.models import Booking
 from bookings.serializers import BookingSerializer,MentorBookingsSerializer
-from mentors.models import Slot
+from mentors.models import Slot,MentorDetails
 from users.models import User
 from rest_framework.views import APIView
-
+from notifications.tasks import send_realtime_notification_task
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -38,6 +40,13 @@ class BookingCreateAPIView(generics.CreateAPIView):
                 slot = Slot.objects.select_for_update().get(id=slot_id, status='available')
 
                 mentor = slot.mentor
+                print(mentor,"this is the mentor")
+                stripe_account_id = MentorDetails.objects.get(user=mentor).stripe_account_id
+                print(stripe_account_id)
+                if not stripe_account_id:
+                    return Response({"detail": "Mentor's Stripe account is not connected. They cannot receive payments."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
                 if request.user == mentor:
                     return Response({"detail": "Mentors cannot book their own slots."},
                                     status=status.HTTP_400_BAD_REQUEST)
@@ -60,13 +69,22 @@ class BookingCreateAPIView(generics.CreateAPIView):
                     f'{slot.end_time.strftime("%H:%M")} ({slot.timezone})'
                 )
 
+                total_amount_cents = int(slot.fee * 100)
+                platform_fee_cents = int(total_amount_cents * settings.PLATFORM_FEE_PERCENTAGE)
+
+                if platform_fee_cents >= total_amount_cents:
+                    return Response({"detail": "Calculated platform fee is greater than or equal to total amount."},
+                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
                 checkout_session = stripe.checkout.Session.create(
                     payment_method_types=['card'], 
                     line_items=[
                         {
                             'price_data': {
                                 'currency': 'usd', 
-                                'unit_amount': int(slot.fee * 100), 
+                                'unit_amount': total_amount_cents, 
                                 'product_data': {
                                     'name': product_name,
                                     'description': product_description,
@@ -78,6 +96,13 @@ class BookingCreateAPIView(generics.CreateAPIView):
                     mode='payment', 
                     success_url=f'http://localhost:3000/booking/success?session_id={{CHECKOUT_SESSION_ID}}',
                     cancel_url='http://localhost:3000/booking/cancel',
+
+                    payment_intent_data={
+                        'application_fee_amount': platform_fee_cents,
+                        'transfer_data': {
+                            'destination': stripe_account_id, 
+                        },
+                    },
 
                     client_reference_id=str(booking.id),
                     metadata={
@@ -230,3 +255,112 @@ def stripe_webhook(request):
         pass
 
     return HttpResponse(status=200)
+
+
+class BookingCancelAPIView(generics.UpdateAPIView):
+    queryset = Booking.objects.all()
+    serializer_class = BookingSerializer
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['patch']
+
+    def patch(self, request, *args, **kwargs):
+        booking = self.get_object()
+
+        if booking.status != 'CONFIRMED' or booking.payment_status != 'PAID':
+            return Response({"detail": "Only confirmed and paid bookings can be cancelled."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        cancelling_user = request.user
+        if not (cancelling_user == booking.student or cancelling_user == booking.mentor):
+            return Response({"detail": "You do not have permission to cancel this booking."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        now = timezone.now()
+        if now >= booking.booked_end_time:
+            return Response({"detail": "Cannot cancel a session that has already ended or passed."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        refund_amount_cents = 0
+        booking_new_status = ''
+        cancellation_reason = request.data.get('reason', 'N/A')
+
+        with transaction.atomic():
+            try:
+                slot = Slot.objects.select_for_update().get(id=booking.slot.id)
+
+                if cancelling_user == booking.student:
+                    time_until_session = booking.booked_start_time - now
+                    hours_until_session = time_until_session.total_seconds() / 3600
+
+                    if hours_until_session >= 24:
+                        refund_amount_cents = int(booking.booked_fee * 100)
+                        booking_new_status = 'CANCELED_BY_STUDENT_FULL_REFUND'
+                    else:
+                        refund_amount_cents = 0
+                        booking_new_status = 'CANCELED_BY_STUDENT_NO_REFUND'
+
+                elif cancelling_user == booking.mentor:
+                    refund_amount_cents = int(booking.booked_fee * 100)
+                    booking_new_status = 'CANCELED_BY_MENTOR'
+
+                if refund_amount_cents > 0:
+                    if not booking.stripe_payment_intent_id:
+                        raise ValueError("Booking has no payment intent ID for refund.")
+                    
+                    refund = stripe.Refund.create(
+                        payment_intent=booking.stripe_payment_intent_id,
+                        amount=refund_amount_cents,
+                        reason='requested_by_customer',
+                        metadata={
+                            'booking_id': str(booking.id),
+                            'cancelled_by_user_id': str(cancelling_user.id),
+                            'cancellation_reason': cancellation_reason,
+                            'refund_type': booking_new_status
+                        }
+                    )
+                    booking.stripe_refund_id = refund.id 
+                    booking.payment_status = 'REFUNDED' if refund.status == 'succeeded' else 'REFUND_FAILED' 
+                else:
+                    booking.payment_status = 'NO_REFUND'
+
+                booking.status = booking_new_status
+                booking.cancellation_reason = cancellation_reason 
+                booking.cancelled_by = cancelling_user 
+                booking.cancelled_at = now
+                booking.save()
+
+                slot.status = 'unavailable' 
+                slot.save()
+
+                #need to create task to remove the event from calendar
+                #need to create task to send notification
+
+
+                return Response({
+                    "message": "Booking cancelled successfully.",
+                    "booking_status": booking.status,
+                    "refund_amount": refund_amount_cents / 100.0,
+                    "stripe_refund_id": getattr(booking, 'stripe_refund_id', None)
+                }, status=status.HTTP_200_OK)
+
+            except Booking.DoesNotExist:
+                return Response({"detail": "Booking not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            except Slot.DoesNotExist:
+                return Response({"detail": "Associated slot not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            except stripe.error.StripeError as e:
+                return Response({"detail": f"Cancellation failed due to payment processing error: {e.user_message}"},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            except ValueError as e:
+                print(f"ValueError during cancellation for booking {booking.id}: {e}")
+                return Response({"detail": f"Cancellation error: {e}"},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return Response({"detail": "An unexpected error occurred during cancellation."},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)

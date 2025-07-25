@@ -7,6 +7,7 @@ from rest_framework import status,permissions
 from users.utils import set_jwt_cookies
 from rest_framework.generics import GenericAPIView,RetrieveUpdateAPIView,ListAPIView,ListCreateAPIView,UpdateAPIView
 from mentors.models import MentorDetails,Slot
+from bookings.models import Booking
 from auth.authentication import CookieJWTAuthentication
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser,FormParser,JSONParser
@@ -20,6 +21,11 @@ from django.db import models
 from django.db.models import Q
 import stripe
 from django.conf import settings
+from django.utils import timezone
+import datetime
+import pytz
+from django.db.models import Sum, Count
+
 
 
 
@@ -429,8 +435,9 @@ class MentorEarningsAPIView(APIView):
 
     def get(self,request,*args,**kwargs):
         mentor = request.user 
+        Mentordetails = MentorDetails.objects.get(user=mentor)
 
-        if not hasattr(mentor, 'stripe_account_id') or not mentor.stripe_account_id:
+        if not hasattr(Mentordetails, 'stripe_account_id') or not Mentordetails.stripe_account_id:
              return Response(
                 {"detail": "Stripe account not connected for this mentor."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -438,7 +445,7 @@ class MentorEarningsAPIView(APIView):
 
         try:
             stripe_account_status = stripe.Account.retrieve(
-                mentor.stripe_account_id
+                Mentordetails.stripe_account_id
             )
             payouts_enabled = stripe_account_status.payouts_enabled
             charges_enabled = stripe_account_status.charges_enabled
@@ -454,7 +461,7 @@ class MentorEarningsAPIView(APIView):
         total_balance_pending = 0
   
         try:
-            balance = stripe.Balance.retrieve(stripe_account=mentor.stripe_account_id)
+            balance = stripe.Balance.retrieve(stripe_account=Mentordetails.stripe_account_id)
             for b in balance['available']:
                 total_balance_available += b['amount']
             for b in balance['pending']:
@@ -472,14 +479,13 @@ class MentorEarningsAPIView(APIView):
 
         try:
             transfers = stripe.Transfer.list(
-                destination=mentor.stripe_account_id,
+                destination=Mentordetails.stripe_account_id,
                 limit=100,
             )
 
             for transfer in transfers.auto_paging_iter(): 
 
-                transfer_created_dt = datetime.fromtimestamp(transfer.created, tz=timezone.utc)
-                
+                transfer_created_dt = datetime.datetime.fromtimestamp(transfer.created, tz=pytz.utc)
                 total_earnings_cents += transfer.amount
 
                 if transfer_created_dt >= start_of_current_month:

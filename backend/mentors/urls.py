@@ -1,7 +1,7 @@
 from django.urls import path
 from mentors.views import (MentorLoginView,MentorProfileView,ProfilePictureView,
                         DocumentUploadView,PublicMentorListView,MentorSlotListCreateView,
-                        MentorSlotCancelView,MentorStripeOnboardingView
+                        MentorSlotCancelView,MentorStripeOnboardingView,MentorEarningsAPIView
 )
 
 urlpatterns = [
@@ -13,6 +13,9 @@ urlpatterns = [
     path('slots/', MentorSlotListCreateView.as_view(), name='mentor-slot-list-create'),
     path('slots/<int:pk>/cancel/', MentorSlotCancelView.as_view(), name='mentor-slot-cancel'),
     path('stripe/onboard/', MentorStripeOnboardingView.as_view(), name='mentor-stripe-onboard'),
+    path('earnings/', MentorEarningsAPIView.as_view(), name='mentor-earnings'),
+
+
 
 
     ]

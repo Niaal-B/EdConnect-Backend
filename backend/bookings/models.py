@@ -62,3 +62,37 @@ class Booking(models.Model):
     def __str__(self):
         return f"Booking {self.id} | {self.student.username} with {self.mentor.username} ({self.status})"
 
+
+
+class BookingCalendarEvent(models.Model):
+    """
+    Stores the Google Calendar Event ID for a specific user and booking.
+    This allows managing calendar events for both mentor and student separately.
+    """
+    booking = models.ForeignKey(
+        'Booking', 
+        on_delete=models.CASCADE,
+        related_name='calendar_events',
+        verbose_name="Related Booking"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="User Owning the Calendar Event"
+    )
+    google_event_id = models.CharField(
+        max_length=255,
+        verbose_name="Google Calendar Event ID",
+        help_text="ID of the event in the user's Google Calendar"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True) 
+
+    class Meta:
+        unique_together = ('booking', 'user')
+        verbose_name = "Booking Calendar Event"
+        verbose_name_plural = "Booking Calendar Events"
+
+    def __str__(self):
+        return f"Event for Booking {self.booking.id} ({self.user.username})"

@@ -54,3 +54,64 @@ def get_google_calendar_service(user_google_tokens):
     except Exception as e:
         logger.error(f"ERROR: Failed to build Google Calendar service for user {user_google_tokens.user.email}: {e}")
         return None
+
+
+def _build_event_body(booking, user_type_info=""):
+    start_time_iso = booking.booked_start_time.isoformat()
+    end_time_iso = booking.booked_end_time.isoformat()
+
+    timezone_name = booking.booked_start_time.tzinfo.tzname(booking.booked_start_time) \
+                    if booking.booked_start_time.tzinfo else settings.TIME_ZONE
+
+    summary_prefix = f"Mentorship Session ({user_type_info})" if user_type_info else "Mentorship Session"
+    summary = f"{summary_prefix} - {booking.student.username} with {booking.mentor.username}"
+
+    description_lines = [
+        f"Booking ID: {booking.id}",
+        f"Mentor: {booking.mentor.username}",
+        f"Student: {booking.student.username}",
+        f"Status: {booking.status}",
+        f"View/Join Session: {settings.FRONTEND_URL}/dashboard/sessions/{booking.id}"
+    ]
+    description = '\n'.join(description_lines)
+
+    attendees = [
+        {'email': booking.mentor.email, 'displayName': booking.mentor.username},
+        {'email': booking.student.email, 'displayName': booking.student.username},
+    ]
+
+    reminders = {
+        'useDefault': False,
+        'overrides': [
+            {'method': 'email', 'minutes': 24 * 60},
+            {'method': 'popup', 'minutes': 10},
+        ],
+    }
+
+    conference_data = {
+        'createRequest': {
+            'requestId': f"mentorship-{booking.id}-{datetime.datetime.now().timestamp()}",
+            'conferenceSolutionKey': {'type': 'hangoutsMeet'}
+        },
+        'parameters': {
+            'addOnAvailable': True
+        }
+    }
+
+    event_body = {
+        'summary': summary,
+        'description': description,
+        'start': {
+            'dateTime': start_time_iso,
+            'timeZone': timezone_name
+        },
+        'end': {
+            'dateTime': end_time_iso,
+            'timeZone': timezone_name
+        },
+        'attendees': attendees,
+        'reminders': reminders,
+        'conferenceData': conference_data,
+    }
+
+    return event_body

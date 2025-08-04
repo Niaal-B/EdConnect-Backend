@@ -1,32 +1,36 @@
-from rest_framework.views import APIView
-from .serializers import (MentorLoginSerializer,MentorProfileSerializer,ProfilePictureSerializer,
-VerificationDocumentSerializer,MentorProfileUpdateSerializer,PublicMentorSerializer,
-SlotSerializer)
-from rest_framework.response import Response
-from rest_framework import status,permissions
-from users.utils import set_jwt_cookies
-from rest_framework.generics import GenericAPIView,RetrieveUpdateAPIView,ListAPIView,ListCreateAPIView,UpdateAPIView
-from mentors.models import MentorDetails,Slot
-from bookings.models import Booking
-from auth.authentication import CookieJWTAuthentication
-from django.shortcuts import get_object_or_404
-from rest_framework.parsers import MultiPartParser,FormParser,JSONParser
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema, OpenApiTypes, OpenApiParameter, OpenApiExample
-from django_filters.rest_framework import DjangoFilterBackend
-from django_filters import rest_framework as filters
-from django.db import models
-from django.db.models import Q
-import stripe
-from django.conf import settings
-from django.utils import timezone
 import datetime
+
 import pytz
-from django.db.models import Sum, Count
+import stripe
+from auth.authentication import CookieJWTAuthentication
+from bookings.models import Booking
+from django.conf import settings
+from django.db import models
+from django.db.models import Count, Q, Sum
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django_filters import rest_framework as filters
+from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
+                                   OpenApiTypes, extend_schema)
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import permissions, status
+from rest_framework.generics import (GenericAPIView, ListAPIView,
+                                     ListCreateAPIView, RetrieveUpdateAPIView,
+                                     UpdateAPIView)
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from users.utils import set_jwt_cookies
 
+from mentors.models import MentorDetails, Slot
 
+from .serializers import (MentorLoginSerializer, MentorProfileSerializer,
+                          MentorProfileUpdateSerializer,
+                          ProfilePictureSerializer, PublicMentorSerializer,
+                          SlotSerializer, VerificationDocumentSerializer)
 
 
 class MentorLoginView(GenericAPIView):

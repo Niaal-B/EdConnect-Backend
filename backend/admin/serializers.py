@@ -24,7 +24,7 @@ class VerificationDocumentSerializer(serializers.ModelSerializer):
 
 class MentorVerificationSerializer(serializers.ModelSerializer):
     documents = serializers.SerializerMethodField()
-    full_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    full_name = serializers.CharField(source='user.username', read_only=True)
     email = serializers.CharField(source='user.email', read_only=True)
     
     class Meta:

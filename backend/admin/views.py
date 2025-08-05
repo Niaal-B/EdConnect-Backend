@@ -185,3 +185,23 @@ class UpdateVerificationStatusView(generics.GenericAPIView):
             },
             status=status.HTTP_200_OK
         )
+
+
+class VerifiedMentorsView(generics.ListAPIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAdminUser]
+    serializer_class = MentorVerificationSerializer
+    
+    def get_queryset(self):
+        return MentorDetails.objects.filter(
+            is_verified=True
+        ).select_related('user')
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        
+        return Response({
+            'count': queryset.count(),
+            'results': serializer.data
+        }, status=status.HTTP_200_OK)

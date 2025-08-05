@@ -1,7 +1,8 @@
 from django.urls import path
-from .views import (BookingCreateAPIView,BookingStatusAPIView,stripe_webhook,StudentBookingsAPIView,
-                    MentorBookingsAPIView,BookingCancelAPIView
-                    )
+
+from .views import (BookingCancelAPIView, BookingCreateAPIView,
+                    BookingStatusAPIView, MentorBookingsAPIView,
+                    StudentBookingsAPIView, stripe_webhook)
 
 urlpatterns = [
 

@@ -1,5 +1,6 @@
-from django.urls import path,include
-from .views import hello_api,GoogleLoginCallbackView
+from django.urls import include, path
+
+from .views import GoogleLoginCallbackView, hello_api
 
 urlpatterns = [
     path('hello/', hello_api),

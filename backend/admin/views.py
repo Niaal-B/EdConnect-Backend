@@ -1,16 +1,16 @@
-from django.shortcuts import render
-from rest_framework_simplejwt.views import TokenObtainPairView,generics
-from admin.serializers import AdminLoginSerializer
-from rest_framework import status
-from users.utils import set_jwt_cookies
-from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser
-from users.serializers import UserSerializer
-from users.models import User
 from auth.authentication import CookieJWTAuthentication
-from admin.serializers import MentorApprovalSerializer,MentorVerificationSerializer
+from django.shortcuts import get_object_or_404, render
 from mentors.models import MentorDetails
-from django.shortcuts import get_object_or_404
+from rest_framework import status
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView, generics
+from users.models import User
+from users.serializers import UserSerializer
+from users.utils import set_jwt_cookies
+
+from admin.serializers import (AdminLoginSerializer, MentorApprovalSerializer,
+                               MentorVerificationSerializer)
 
 # Create your views here.
 

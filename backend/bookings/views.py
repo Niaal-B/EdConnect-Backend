@@ -299,10 +299,15 @@ class BookingCancelAPIView(generics.UpdateAPIView):
                     else:
                         refund_amount_cents = 0
                         booking_new_status = 'CANCELED_BY_STUDENT_NO_REFUND'
+                    
+                    slot.status = 'available' 
+                    slot.save()
 
                 elif cancelling_user == booking.mentor:
                     refund_amount_cents = int(booking.booked_fee * 100)
                     booking_new_status = 'CANCELED_BY_MENTOR'
+                    slot.status = 'unavailable' 
+                    slot.save()
 
                 if refund_amount_cents > 0:
                     if not booking.stripe_payment_intent_id:
@@ -330,8 +335,7 @@ class BookingCancelAPIView(generics.UpdateAPIView):
                 booking.cancelled_at = now
                 booking.save()
 
-                slot.status = 'unavailable' 
-                slot.save()
+
 
                 #need to create task to remove the event from calendar
                 #need to create task to send notification

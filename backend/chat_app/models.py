@@ -62,6 +62,9 @@ class Message(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
 
+    file = models.FileField(upload_to='chat_media/', blank=True, null=True)
+    file_type = models.CharField(max_length=50, blank=True, null=True)
+
     class Meta:
         """
         Meta options for the Message model.

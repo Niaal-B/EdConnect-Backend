@@ -1,36 +1,30 @@
 import json
+import logging
+import base64
+from django.core.files.base import ContentFile
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
-from django.db import models
 
 from chat_app.models import ChatRoom, Message 
 
 User = get_user_model() 
-
+logger = logging.getLogger(__name__)
 
 class ChatConsumer(AsyncWebsocketConsumer):
     """
     WebSocket consumer for handling real-time chat messages.
-    Each instance of this class manages a single, persistent WebSocket connection
-    from a client (e.g., a user's browser tab).
     """
 
     async def connect(self):
-        """
-        This method is automatically called by Channels when a new WebSocket connection
-        is attempted by a client. It's the first point of interaction for a new connection.
-        """
-        
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = f"chat_{self.room_name}"
+        user = self.scope["user"]
 
-        if not self.scope["user"].is_authenticated:
+        if not user.is_authenticated:
+            logger.warning(f"WebSocket connection rejected: User not authenticated for room {self.room_name}")
             await self.close(code=4001) 
-            print(f"WebSocket connection rejected: User not authenticated for room {self.room_name}")
             return
-
-        user = self.scope["user"] 
 
         try:
             self.chat_room_obj = await sync_to_async(ChatRoom.objects.get)(id=self.room_name)
@@ -38,18 +32,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             mentor_obj = await sync_to_async(lambda: self.chat_room_obj.mentor)()
 
             if not (user == student_obj or user == mentor_obj):
+                logger.warning(f"WebSocket connection rejected: User {user.username} not authorized for room {self.room_name}")
                 await self.close(code=4003)
-                print(f"WebSocket connection rejected: User {user.username} not authorized for room {self.room_name}")
                 return
         except ChatRoom.DoesNotExist:
+            logger.error(f"WebSocket connection rejected: ChatRoom {self.room_name} does not exist.")
             await self.close(code=4004) 
-            print(f"WebSocket connection rejected: ChatRoom {self.room_name} does not exist.")
             return
 
-        # If all checks pass (authenticated and authorized), formally accept the connection.
-        # This completes the WebSocket handshake.
         await self.accept()
-        print(f"WebSocket connection accepted for user {user.username} in room {self.room_name}")
+        logger.info(f"WebSocket connection accepted for user {user.username} in room {self.room_name}")
 
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -57,78 +49,92 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def disconnect(self, close_code):
-        """
-        This method is automatically called by Channels when a WebSocket connection
-        is closed (either by the client or the server).
-        """
-        print(f"WebSocket connection disconnected from room {self.room_name} with code {close_code}")
+        logger.info(f"WebSocket connection disconnected from room {self.room_name} with code {close_code}")
 
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name    
         )
+    
+    @sync_to_async
+    def save_message_with_media(self, chat_room_obj, sender, content=None, file_data=None, file_name=None, file_type=None):
+        """Helper function to save message with or without media."""
+        new_message = Message(
+            chat_room=chat_room_obj,
+            sender=sender,
+            content=content
+        )
+        
+        if file_data and file_name and file_type:
+            try:
+                # Split the Base64 string to get just the data
+                format, imgstr = file_data.split(';base64,')
+                data = ContentFile(base64.b64decode(imgstr), name=file_name)
+                new_message.file = data
+                new_message.file_type = file_type
+                logger.info(f"Successfully decoded and attached file {file_name}")
+            except Exception as e:
+                logger.error(f"Error decoding Base64 file data: {e}")
+
+        new_message.save()
+        return new_message
 
     async def receive(self, text_data):
-        """
-        This method is automatically called by Channels when a message is received
-        from the connected WebSocket client.
-        """
-
+        logger.info(text_data)
         text_data_json = json.loads(text_data)
         message_content = text_data_json.get('message')
-
-        if not message_content:
-            print("Received empty message content.")
-            return
+        file_data = text_data_json.get('file_data')
+        file_name = text_data_json.get('file_name')
+        file_type = text_data_json.get('file_type')
         
+        if not message_content and not file_data:
+            logger.warning("Received empty message and no file.")
+            return
+
         sender = self.scope["user"]
 
         try:
-            new_message = await sync_to_async(Message.objects.create)(
-                chat_room=self.chat_room_obj,
-                sender=sender,
-                content=message_content
+            # Pass all the necessary data to the saving function
+            new_message = await self.save_message_with_media(
+                self.chat_room_obj, 
+                sender, 
+                message_content, 
+                file_data, 
+                file_name, 
+                file_type
             )
+            
             self.chat_room_obj.updated_at = new_message.timestamp
             await sync_to_async(self.chat_room_obj.save)()
-
-            print(f"Message saved: '{message_content}' from {sender.username} in room {self.room_name}")
+            
+            logger.info(f"Message saved from {sender.username} in room {self.room_name}")
 
         except Exception as e:
-            print(f"Error saving message to database: {e}")
-
+            logger.error(f"Error saving message to database: {e}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Failed to save message. Please try again.'
             }))
-            
             return
 
+        response = {
+            'type': 'chat_message', 
+            'message': new_message.content, # Use the content from the saved object
+            'sender_id': sender.id,
+            'sender_username': sender.username,
+            'timestamp': new_message.timestamp.isoformat(),
+            'chat_room_id': self.room_name,
+        }
+
+        if new_message.file:
+            response['file_url'] = new_message.file.url
+            response['file_type'] = new_message.file_type
+        
         await self.channel_layer.group_send(
             self.room_group_name, 
-            {
-                'type': 'chat_message', 
-                'message': message_content,
-                'sender_id': sender.id,
-                'sender_username': sender.username,
-                'timestamp': new_message.timestamp.isoformat(),
-                'chat_room_id': self.room_name
-            }
+            response
         )
 
     async def chat_message(self, event):
-        message_content = event['message']
-        sender_id = event['sender_id']
-        sender_username = event['sender_username']
-        timestamp = event['timestamp']
-        chat_room_id = event['chat_room_id']
-
-        await self.send(text_data=json.dumps({
-            'type': 'chat_message',
-            'message': message_content,
-            'sender_id': sender_id,
-            'sender_username': sender_username,
-            'timestamp': timestamp,
-            'chat_room_id': chat_room_id
-        }))
-        print(f"Message sent to client: '{message_content}' in room {chat_room_id}")
+        await self.send(text_data=json.dumps(event))
+        logger.info(f"Message sent to client in room {event.get('chat_room_id')}")

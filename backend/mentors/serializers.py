@@ -39,13 +39,26 @@ class VerificationDocumentSerializer(serializers.ModelSerializer):
 
 class MentorProfileSerializer(serializers.ModelSerializer):
     educations = EducationSerializer(many=True, read_only=True)
-    documents = VerificationDocumentSerializer(many=True, read_only=True)
+    documents = serializers.SerializerMethodField()
     user = UserSerializer(read_only=True)
     
     class Meta:
         model = MentorDetails
         fields = '__all__'
         read_only_fields = ['user', 'is_verified']
+
+    def get_documents(self, obj):
+        return [
+            {
+                "id": doc.id,
+                "document_type": doc.document_type,
+                "file": self.context['request'].build_absolute_uri(doc.file.url),
+                "is_approved": doc.is_approved,
+                "uploaded_at": doc.uploaded_at,
+            }
+            for doc in obj.user.documents.all()
+        ]
+
 
 class MentorProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:

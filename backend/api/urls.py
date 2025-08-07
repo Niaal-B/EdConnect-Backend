@@ -14,4 +14,6 @@ urlpatterns = [
     path('bookings/',include('bookings.urls')),
     path('notifications/',include('notifications.urls')),
     path('auth/google/callback/', GoogleLoginCallbackView.as_view(), name='google_login_callback'),
+    path('sessions/', include('sessions.urls')),
+
 ]

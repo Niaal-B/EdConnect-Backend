@@ -13,8 +13,17 @@ from admin.serializers import (AdminLoginSerializer, MentorApprovalSerializer,
                                MentorVerificationSerializer)
 
 
-from notifications.tasks import send_realtime_notification_task
+from rest_framework.views import APIView
+from django.db.models import Count
+from datetime import timedelta
+from django.utils import timezone
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
+
+from notifications.tasks import send_realtime_notification_task
+from bookings.models import Booking
+from mentors.models import MentorDetails
 
 # Create your views here.
 
@@ -224,3 +233,37 @@ class VerifiedMentorsView(generics.ListAPIView):
             'count': queryset.count(),
             'results': serializer.data
         }, status=status.HTTP_200_OK)
+
+
+class AdminDashboardStatsView(APIView):
+    def get(self, request, *args, **kwargs):
+        total_users = User.objects.filter(is_active=True).count()
+
+
+        active_mentors = MentorDetails.objects.filter(is_verified=True).count()
+
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        completed_sessions = Booking.objects.filter(
+            status='completed', 
+            booked_end_time__gte=thirty_days_ago
+        ).count()
+
+        signups_last_7_days = []
+        for i in range(7):
+            date = timezone.now() - timedelta(days=i)
+            day_signups = User.objects.filter(
+                date_joined__date=date.date()
+            ).count()
+            signups_last_7_days.append({
+                "day": date.strftime("%A"), 
+                "signups": day_signups
+            })
+        signups_last_7_days.reverse()
+
+        data = {
+            "total_users": total_users,
+            "active_mentors": active_mentors,
+            "completed_sessions_last_30_days": completed_sessions,
+            "user_signups_last_7_days": signups_last_7_days,
+        }
+        return Response(data)

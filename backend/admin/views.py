@@ -12,6 +12,10 @@ from users.utils import set_jwt_cookies
 from admin.serializers import (AdminLoginSerializer, MentorApprovalSerializer,
                                MentorVerificationSerializer)
 
+
+from notifications.tasks import send_realtime_notification_task
+
+
 # Create your views here.
 
 class AdminLoginView(generics.GenericAPIView):
@@ -132,7 +136,15 @@ class ApproveRejectMentorView(generics.GenericAPIView):
             mentor.rejection_reason = ''
             mentor.save()
             
-          #need to implement the notification
+            send_realtime_notification_task.delay(
+                recipient_id=mentor.user.id,
+                sender_id=request.user.id,
+                notification_type="mentor_approved",
+                message="Your mentor application has been approved!",
+                related_object_id=mentor.id,
+                related_object_type="mentor_approval"
+            )
+
             
             return Response(
                 {
@@ -147,8 +159,15 @@ class ApproveRejectMentorView(generics.GenericAPIView):
             mentor.verification_status = 'rejected'
             mentor.rejection_reason = reason
             mentor.save()
-            
-           #need to implement the notification
+
+            send_realtime_notification_task.delay(
+                recipient_id=mentor.user.id,
+                sender_id=request.user.id,
+                notification_type="mentor_rejected",  
+                message=f"Your mentor application has been rejected. Reason: {reason}",
+                related_object_id=mentor.id,
+                related_object_type="mentor_rejection"
+            )
 
             return Response(
                 {

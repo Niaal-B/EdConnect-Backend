@@ -91,7 +91,6 @@ class CookieTokenRefreshView(GenericAPIView):
     Custom token refresh view that works with httpOnly cookies
     """
     def post(self, request):
-        # Get refresh token from cookie
         refresh_token = request.COOKIES.get(settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token'))
         
         if not refresh_token:

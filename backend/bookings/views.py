@@ -21,6 +21,10 @@ from mentors.models import Slot,MentorDetails
 from users.models import User
 from rest_framework.views import APIView
 from notifications.tasks import send_realtime_notification_task
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -132,7 +136,7 @@ class BookingCreateAPIView(generics.CreateAPIView):
                 return Response({"detail": f"Payment initiation failed: {e.user_message or 'Stripe API error'}"},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             except Exception as e:
-                print(e)
+                logger.error(e)
                 return Response({"detail": "An unexpected error occurred during booking."},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -229,26 +233,24 @@ def stripe_webhook(request):
                             slot.status = 'booked'
                             slot.save()
                         elif slot.status == 'booked':
-                            # Slot might have been booked by another means or already updated.
-                            # Log this as an informational message rather than an error.
-                            print(f"Webhook: Slot {slot_id} already marked booked. Booking {booking_id} confirmed.")
+                            pass
                         else:
                              # Handle other unexpected slot statuses if needed
-                            print(f"Webhook: Slot {slot_id} has unexpected status {slot.status}. Booking {booking_id} confirmed.")
+                            logger.error(f"Webhook: Slot {slot_id} has unexpected status {slot.status}. Booking {booking_id} confirmed.")
 
 
-                    print(f"Booking {booking_id} and Slot {slot_id} updated to CONFIRMED/booked via webhook.")
+                    logger.debug(f"Booking {booking_id} and Slot {slot_id} updated to CONFIRMED/booked via webhook.")
                 except Booking.DoesNotExist:
-                    print(f"Webhook: Booking with ID {booking_id} not found.")
+                    logger.error(f"Webhook: Booking with ID {booking_id} not found.")
                     return HttpResponse(status=404)
                 except Slot.DoesNotExist:
-                    print(f"Webhook: Slot with ID {slot_id} not found for booking {booking_id}.")
+                    logger.error(f"Webhook: Slot with ID {slot_id} not found for booking {booking_id}.")
                     return HttpResponse(status=404)
                 except Exception as e:
-                    print(f"Webhook processing error for booking {booking_id}: {e}")
+                    logger.error(f"Webhook processing error for booking {booking_id}: {e}")
                     return HttpResponse(status=500)
         else:
-            print("Webhook received without booking_id in metadata. Session ID:", session.id)
+            logger.error("Webhook received without booking_id in metadata. Session ID:", session.id)
 
     elif event['type'] == 'payment_intent.succeeded':
 
@@ -359,7 +361,7 @@ class BookingCancelAPIView(generics.UpdateAPIView):
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             except ValueError as e:
-                print(f"ValueError during cancellation for booking {booking.id}: {e}")
+                logger.error(f"ValueError during cancellation for booking {booking.id}: {e}")
                 return Response({"detail": f"Cancellation error: {e}"},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

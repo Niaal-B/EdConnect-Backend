@@ -8,7 +8,6 @@ class CookieJWTAuthentication(JWTAuthentication):
     """
     def authenticate(self, request):
         cookie_token = request.COOKIES.get(settings.SIMPLE_JWT['AUTH_COOKIE'])
-        print(cookie_token)
         if not cookie_token:
             return None
         try:

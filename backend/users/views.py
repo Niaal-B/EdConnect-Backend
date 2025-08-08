@@ -66,7 +66,6 @@ class VerifyEmailView(generics.GenericAPIView):
                 StudentDetails.objects.create(user=user)
                 
             response = Response({"status": "verified",'role': user.role}, status=status.HTTP_200_OK)
-            print("Hey hey this is the response")
             return Response({
             "message": "User registered successfully. OTP sent to email.",
         }, status=status.HTTP_201_CREATED)

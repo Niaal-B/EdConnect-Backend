@@ -48,11 +48,12 @@ class MentorProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['user', 'is_verified']
 
     def get_documents(self, obj):
+        request = self.context.get('request', None)
         return [
             {
                 "id": doc.id,
                 "document_type": doc.document_type,
-                "file": self.context['request'].build_absolute_uri(doc.file.url),
+                "file": request.build_absolute_uri(doc.file.url) if request else doc.file.url,
                 "is_approved": doc.is_approved,
                 "uploaded_at": doc.uploaded_at,
             }

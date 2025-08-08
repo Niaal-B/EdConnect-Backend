@@ -341,6 +341,7 @@ class BookingCancelAPIView(generics.UpdateAPIView):
 
                 #need to create task to remove the event from calendar
                 #need to create task to send notification
+                
 
 
                 return Response({

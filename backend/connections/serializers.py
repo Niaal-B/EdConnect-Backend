@@ -37,7 +37,7 @@ class ConnectionRequestSerializer(serializers.Serializer):
             raise ValidationError({"mentor_id": "The selected user is not a mentor."})
 
         if Connection.objects.filter(student=student, mentor=mentor).exists():
-            raise ValidationError("Connection with this mentor already exists")
+            raise ValidationError("Connection with this mentor already exists.")
 
         attrs['mentor'] = mentor
         return attrs

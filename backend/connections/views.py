@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from chat_app.models import ChatRoom
 from asgiref.sync import sync_to_async 
 from notifications.tasks import send_realtime_notification_task 
-
+from rest_framework.exceptions import ValidationError
 
 
 
@@ -47,8 +47,8 @@ class RequestConnectionView(APIView):
                 return Response({'detail': 'The selected user is not a mentor.'}, status=status.HTTP_400_BAD_REQUEST)
 
             if Connection.objects.filter(student=student, mentor=mentor).exists():
-                return Response({'detail': 'Connection already exists.'}, status=status.HTTP_400_BAD_REQUEST)
-
+                raise ValidationError("Connection with this mentor already exists")
+                
             connection = Connection.objects.create(student=student, mentor=mentor)
 
             send_realtime_notification_task.delay(
@@ -66,7 +66,6 @@ class RequestConnectionView(APIView):
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            # Catch any unexpected server errors
             return Response({'detail': f'Server error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

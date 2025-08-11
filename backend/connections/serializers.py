@@ -114,7 +114,5 @@ class StudentConnectionSerializer(serializers.ModelSerializer):
             # if any reson that when chat room not occurs
             return None
         except Exception as e:
-            # handling this for any potntial err that will come in future
-            print(f"Error retrieving chat room ID for connection {obj.id}: {e}")
             return None
 

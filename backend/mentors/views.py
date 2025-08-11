@@ -164,22 +164,6 @@ class DocumentUploadView(APIView):
 )
 
 class PublicMentorListView(ListAPIView):
-    """
-    Enhanced public API to list verified mentors with:
-    - Pagination (10 per page)
-    - Search functionality (name, bio, expertise)
-    - Expertise filtering
-    - Experience range filtering
-    - Error handling
-    
-    Example requests:
-    GET /api/mentors/                                    # All mentors (page 1)
-    GET /api/mentors/?page=2                             # Page 2
-    GET /api/mentors/?expertise=python                   # Filter by expertise
-    GET /api/mentors/?experience_min=5                   # 5+ years experience
-    GET /api/mentors/?search=machine learning            # Search functionality
-    GET /api/mentors/?search=john&expertise=python       # Combined search and filter
-    """
     
     serializer_class = PublicMentorSerializer
     
@@ -187,62 +171,49 @@ class PublicMentorListView(ListAPIView):
         try:
             queryset = MentorDetails.objects.filter(is_verified=True).select_related('user')
             
-            # 1. Search functionality - searches across username, bio, and expertise
             search_query = self.request.query_params.get('search', '').strip()
             if search_query:
                 search_terms = search_query.split()
                 search_q = Q()
                 
                 for term in search_terms:
-                    # Search in username (from related User model)
                     search_q |= Q(user__username__icontains=term)
-                    # Search in bio
                     search_q |= Q(bio__icontains=term)
-                    # Search in expertise (assuming it's a text field or JSON field)
                     search_q |= Q(expertise__icontains=term)
                 
                 queryset = queryset.filter(search_q)
             
-            # 2. Filter by expertise (case-insensitive partial match)
             expertise = self.request.query_params.get('expertise', '').strip()
             if expertise:
                 queryset = queryset.filter(expertise__icontains=expertise)
             
-            # 3. Filter by minimum experience
             exp_min = self.request.query_params.get('experience_min')
             if exp_min:
                 try:
                     exp_min_int = int(exp_min)
                     queryset = queryset.filter(experience_years__gte=exp_min_int)
                 except ValueError:
-                    pass  # Ignore invalid values
+                    pass  
             
-            # 4. Filter by maximum experience
             exp_max = self.request.query_params.get('experience_max')
             if exp_max:
                 try:
                     exp_max_int = int(exp_max)
                     queryset = queryset.filter(experience_years__lte=exp_max_int)
                 except ValueError:
-                    pass  # Ignore invalid values
+                    pass  
             
-            # Order by experience (most experienced first) and then by username
             return queryset.order_by('-experience_years', 'user__username').distinct()
             
         except Exception as e:
-            # Log the error in production
-            print(f"Error in queryset: {str(e)}")
             return MentorDetails.objects.none()
     
     def list(self, request, *args, **kwargs):
         try:
-            # Get the base response from DRF's ListAPIView
             response = super().list(request, *args, **kwargs)
             
-            # Get current page number
             page_number = int(request.query_params.get('page', 1))
             
-            # Custom response format to match frontend expectations
             custom_response = {
                 'success': True,
                 'mentors': response.data['results'],
@@ -254,7 +225,6 @@ class PublicMentorListView(ListAPIView):
                 'previous_page': page_number - 1 if response.data['previous'] else None,
             }
             
-            # Add search/filter info if present
             search_query = request.query_params.get('search', '').strip()
             expertise = request.query_params.get('expertise', '').strip()
             exp_min = request.query_params.get('experience_min')

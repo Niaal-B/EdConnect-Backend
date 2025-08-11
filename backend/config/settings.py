@@ -1,8 +1,8 @@
 import os
-from pathlib import Path
-from dotenv import load_dotenv
 from datetime import timedelta
+from pathlib import Path
 
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -134,6 +134,7 @@ CHANNEL_LAYERS = {
 }
 
 import logging
+
 logging.getLogger('channels_redis').setLevel(logging.WARNING)
 
 

@@ -1,9 +1,8 @@
-from rest_framework import serializers
 from bookings.models import Booking
 from mentors.models import Slot
-
-from students.serializers import StudentDetailsSerializer
 from mentors.serializers import MentorProfileSerializer
+from rest_framework import serializers
+from students.serializers import StudentDetailsSerializer
 
 
 class BasicSlotSerializer(serializers.ModelSerializer):

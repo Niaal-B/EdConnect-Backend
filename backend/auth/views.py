@@ -1,26 +1,28 @@
-from django.shortcuts import render
-from rest_framework.generics import GenericAPIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework_simplejwt.exceptions import TokenError
 import logging
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from auth.serializers import UserLoginSerializer
-from users.utils import set_jwt_cookies
-from rest_framework_simplejwt.tokens import AccessToken,RefreshToken
-from .authentication import CookieJWTAuthentication
+
+from auth.serializers import (ForgotPasswordSerializer,
+                              ResetPasswordSerializer, UserLoginSerializer)
 from django.conf import settings
-from rest_framework.views import APIView
-from users.models import User
-from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
-from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
-from users.tasks import send_reset_password_email
-from auth.serializers import ForgotPasswordSerializer,ResetPasswordSerializer
+from django.shortcuts import render
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from drf_yasg.utils import swagger_auto_schema
 from mentors.models import MentorDetails
+from rest_framework import status
+from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from students.models import StudentDetails
+from users.models import User
+from users.tasks import send_reset_password_email
+from users.utils import set_jwt_cookies
+
+from .authentication import CookieJWTAuthentication
 
 logger = logging.getLogger(__name__)
 

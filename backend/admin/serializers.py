@@ -1,6 +1,6 @@
-from rest_framework import serializers
 from django.contrib.auth import authenticate
 from mentors.models import MentorDetails, VerificationDocument
+from rest_framework import serializers
 
 
 class AdminLoginSerializer(serializers.Serializer):

@@ -1,6 +1,7 @@
+from django.conf import settings
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
-from django.conf import settings
+
 
 class CookieJWTAuthentication(JWTAuthentication):
     """

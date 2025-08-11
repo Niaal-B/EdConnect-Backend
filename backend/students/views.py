@@ -1,15 +1,16 @@
-from rest_framework.generics import GenericAPIView,RetrieveUpdateAPIView
-from students.serializers import StudentLoginSerializer,StudentDetailsSerializer
-from students.models import StudentDetails
-from django.shortcuts import get_object_or_404
-from rest_framework.response import Response
-from rest_framework import status
-from users.utils import set_jwt_cookies
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import MultiPartParser,FormParser,JSONParser
 from auth.authentication import CookieJWTAuthentication
-from users.serializers import UserSerializer
+from django.shortcuts import get_object_or_404
+from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from students.models import StudentDetails
+from students.serializers import (StudentDetailsSerializer,
+                                  StudentLoginSerializer)
+from users.serializers import UserSerializer
+from users.utils import set_jwt_cookies
 
 
 class StudentLoginView(GenericAPIView):

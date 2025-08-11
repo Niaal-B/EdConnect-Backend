@@ -1,12 +1,12 @@
+import base64
 import json
 import logging
-import base64
-from django.core.files.base import ContentFile
-from channels.generic.websocket import AsyncWebsocketConsumer
-from asgiref.sync import sync_to_async
-from django.contrib.auth import get_user_model
 
-from chat_app.models import ChatRoom, Message 
+from asgiref.sync import sync_to_async
+from channels.generic.websocket import AsyncWebsocketConsumer
+from chat_app.models import ChatRoom, Message
+from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
 
 User = get_user_model() 
 logger = logging.getLogger(__name__)

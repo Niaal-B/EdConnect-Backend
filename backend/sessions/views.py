@@ -1,14 +1,14 @@
 import os
 import time
-from rest_framework.decorators import api_view, permission_classes,authentication_classes
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+
 from agora_token_builder import RtcTokenBuilder
-from django.conf import settings
-
-from dotenv import load_dotenv
 from auth.authentication import CookieJWTAuthentication
-
+from django.conf import settings
+from dotenv import load_dotenv
+from rest_framework.decorators import (api_view, authentication_classes,
+                                       permission_classes)
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 AGORA_APP_ID =os.environ.get('AGORA_APP_ID')
 

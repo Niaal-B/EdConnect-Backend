@@ -15,6 +15,7 @@ from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
                                    OpenApiTypes, extend_schema)
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from mentors.models import MentorDetails, Slot
 from rest_framework import permissions, status
 from rest_framework.generics import (GenericAPIView, ListAPIView,
                                      ListCreateAPIView, RetrieveUpdateAPIView,
@@ -24,8 +25,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.utils import set_jwt_cookies
-
-from mentors.models import MentorDetails, Slot
 
 from .serializers import (MentorLoginSerializer, MentorProfileSerializer,
                           MentorProfileUpdateSerializer,

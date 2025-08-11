@@ -1,6 +1,8 @@
-from django.db import models
-from django.conf import settings
 import datetime
+
+from django.conf import settings
+from django.db import models
+
 
 class StudentDetails(models.Model):
 

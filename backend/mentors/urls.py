@@ -1,5 +1,4 @@
 from django.urls import path
-
 from mentors.views import (DocumentUploadView, MentorEarningsAPIView,
                            MentorLoginView, MentorProfileView,
                            MentorSlotCancelView, MentorSlotListCreateView,

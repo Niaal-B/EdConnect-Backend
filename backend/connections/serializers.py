@@ -1,12 +1,13 @@
-from rest_framework import serializers
-from connections.models import Connection
-from users.models import User
-from students.models import StudentDetails  
-from mentors.serializers import SlotSerializer,SlotReadOnlySerializer
-from mentors.models import MentorDetails
 from chat_app.models import ChatRoom
-from rest_framework.exceptions import ValidationError
+from connections.models import Connection
 from django.core.exceptions import ObjectDoesNotExist
+from mentors.models import MentorDetails
+from mentors.serializers import SlotReadOnlySerializer, SlotSerializer
+from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+from students.models import StudentDetails
+from users.models import User
+
 
 class ConnectionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,6 +42,21 @@ class ConnectionRequestSerializer(serializers.Serializer):
 
         attrs['mentor'] = mentor
         return attrs
+
+
+class ConnectionStatusUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Connection
+        fields = ['status']
+
+    def validate_status(self, value):
+        allowed_choices = ['accepted', 'rejected']
+        if value not in allowed_choices:
+            raise serializers.ValidationError(
+                f"Invalid status. Allowed values are: {', '.join(allowed_choices)}."
+            )
+        return value
+
 
 class StudentProfileSerializer(serializers.ModelSerializer):
     class Meta:

@@ -1,10 +1,12 @@
-from rest_framework import serializers
+from datetime import timedelta
+
 from django.contrib.auth import authenticate
-from mentors.models import MentorDetails,Education,VerificationDocument,Slot
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
-from datetime import timedelta
+from mentors.models import Education, MentorDetails, Slot, VerificationDocument
+from rest_framework import serializers
 from users.models import User
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

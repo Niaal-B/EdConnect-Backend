@@ -1,7 +1,9 @@
-from django.db import models
-from django.conf import settings
 import uuid
+
+from django.conf import settings
+from django.db import models
 from mentors.models import Slot
+
 
 class Booking(models.Model):
     STATUS_CHOICES = [

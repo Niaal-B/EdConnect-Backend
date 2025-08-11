@@ -1,5 +1,6 @@
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 def set_jwt_cookies(response, user):
     refresh = RefreshToken.for_user(user)

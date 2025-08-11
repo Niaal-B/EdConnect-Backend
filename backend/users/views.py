@@ -1,17 +1,17 @@
-from rest_framework import generics, status,permissions
-from rest_framework.response import Response
-from users.redis_utils import store_unverified_user
-from users.tasks import send_verification_email
-from users.serializers import UserRegistrationSerializer,EmptySerializer
-from rest_framework.views import APIView
-from users.redis_utils import redis_client
 import json
-from users.models import User
-from users.utils import set_jwt_cookies  
-from mentors.models import MentorDetails
-from students.models import StudentDetails
+
 from django.conf import settings
+from mentors.models import MentorDetails
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from students.models import StudentDetails
+from users.models import User
+from users.redis_utils import redis_client, store_unverified_user
+from users.serializers import EmptySerializer, UserRegistrationSerializer
+from users.tasks import send_verification_email
+from users.utils import set_jwt_cookies
 
 
 class UserRegistrationView(generics.CreateAPIView):

@@ -1,8 +1,9 @@
-from rest_framework import serializers
 from django.contrib.auth import authenticate
+from rest_framework import serializers
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from students.models import StudentDetails
-from rest_framework.parsers import MultiPartParser,FormParser,JSONParser
 from users.serializers import UserSerializer
+
 
 class StudentLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()

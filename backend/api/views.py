@@ -3,6 +3,7 @@ import os
 from datetime import timedelta
 
 import requests
+from api.models import UserGoogleTokens
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
@@ -18,8 +19,6 @@ from rest_framework.views import APIView
 from students.models import StudentDetails
 from users.models import User
 from users.utils import set_jwt_cookies
-
-from api.models import UserGoogleTokens
 
 User = get_user_model() 
 

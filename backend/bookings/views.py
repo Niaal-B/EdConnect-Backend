@@ -1,27 +1,24 @@
-from django.shortcuts import render
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from auth.authentication import CookieJWTAuthentication
-import stripe
-from django.conf import settings
-from django.db import transaction 
-from django.shortcuts import get_object_or_404 
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST   
-from django.http import JsonResponse, HttpResponse
-from django.db.models import Q
-from django.utils import timezone 
-
-
-
-from bookings.models import Booking
-from bookings.serializers import BookingSerializer,MentorBookingsSerializer
-from mentors.models import Slot,MentorDetails
-from users.models import User
-from rest_framework.views import APIView
-from notifications.tasks import send_realtime_notification_task
 import logging
+
+import stripe
+from auth.authentication import CookieJWTAuthentication
+from bookings.models import Booking
+from bookings.serializers import BookingSerializer, MentorBookingsSerializer
+from django.conf import settings
+from django.db import transaction
+from django.db.models import Q
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from mentors.models import MentorDetails, Slot
+from notifications.tasks import send_realtime_notification_task
+from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from users.models import User
 
 logger = logging.getLogger(__name__)
 

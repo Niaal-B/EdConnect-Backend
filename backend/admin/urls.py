@@ -1,10 +1,9 @@
-from django.urls import path
-
-from admin.views import (AdminLoginView, ApproveRejectMentorView,
-                         MentorVerificationDetailView,
+from admin.views import (AdminDashboardStatsView, AdminLoginView,
+                         ApproveRejectMentorView, MentorVerificationDetailView,
                          PendingMentorVerificationsView,
                          UpdateVerificationStatusView, UserListView,
-                         UserStatusUpdateView,VerifiedMentorsView,AdminDashboardStatsView)
+                         UserStatusUpdateView, VerifiedMentorsView)
+from django.urls import path
 
 urlpatterns = [
     path('login/',AdminLoginView.as_view(),name='admin-login'),

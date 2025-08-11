@@ -5,6 +5,8 @@ from students.models import StudentDetails
 from mentors.serializers import SlotSerializer,SlotReadOnlySerializer
 from mentors.models import MentorDetails
 from chat_app.models import ChatRoom
+from rest_framework.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 
 class ConnectionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,6 +17,30 @@ class ConnectionSerializer(serializers.ModelSerializer):
 class ConnectionRequestSerializer(serializers.Serializer):
     mentor_id = serializers.IntegerField()
 
+    def validate(self, attrs):
+        request = self.context.get('request')
+        student = request.user
+        mentor_id = attrs.get('mentor_id')
+
+        if student.role != 'student':
+            raise ValidationError("Only students can send requests.")
+
+        if not mentor_id:
+            raise ValidationError({"mentor_id": "Mentor ID is required."})
+
+        try:
+            mentor = User.objects.get(id=mentor_id)
+        except ObjectDoesNotExist:
+            raise ValidationError({"mentor_id": "Mentor does not exist."})
+
+        if mentor.role != 'mentor':
+            raise ValidationError({"mentor_id": "The selected user is not a mentor."})
+
+        if Connection.objects.filter(student=student, mentor=mentor).exists():
+            raise ValidationError("Connection with this mentor already exists")
+
+        attrs['mentor'] = mentor
+        return attrs
 
 class StudentProfileSerializer(serializers.ModelSerializer):
     class Meta:

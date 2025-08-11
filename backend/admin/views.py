@@ -111,7 +111,7 @@ class PendingMentorVerificationsView(generics.ListAPIView):
     
     def get_queryset(self):
         return MentorDetails.objects.filter(
-            is_verified=False
+            verification_status='pending'
         ).select_related('user').prefetch_related('user__documents')
     
     def list(self, request, *args, **kwargs):

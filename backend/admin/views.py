@@ -124,6 +124,7 @@ class PendingMentorVerificationsView(generics.ListAPIView):
         }, status=status.HTTP_200_OK)
 
 
+
 class ApproveRejectMentorView(generics.GenericAPIView):
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminUser]
@@ -231,6 +232,27 @@ class VerifiedMentorsView(generics.ListAPIView):
             'count': queryset.count(),
             'results': serializer.data
         }, status=status.HTTP_200_OK)
+
+
+class RejectedMentorsView(generics.ListAPIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAdminUser]
+    serializer_class = MentorVerificationSerializer
+    
+    def get_queryset(self):
+        return MentorDetails.objects.filter(
+            verification_status='rejected'
+        ).select_related('user')
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        
+        return Response({
+            'count': queryset.count(),
+            'results': serializer.data
+        }, status=status.HTTP_200_OK)
+
 
 
 class AdminDashboardStatsView(APIView):

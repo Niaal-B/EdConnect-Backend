@@ -12,7 +12,6 @@ urlpatterns = [
     path('mentors/pending/', PendingMentorVerificationsView.as_view(), name='pending-mentors'),
     path('mentors/verified/', VerifiedMentorsView.as_view(), name='verified-mentors'),
     path('mentors/rejected/', RejectedMentorsView.as_view(), name='rejected-mentors'),
-    path('mentors/verified/', VerifiedMentorsView.as_view(), name='verified-mentors'),
     path('mentors/<int:id>/', MentorVerificationDetailView.as_view(), name='mentor-detail'),
     path('mentors/<int:mentor_id>/approve-reject/', ApproveRejectMentorView.as_view(), name='approve-reject-mentor'),
     path('mentors/<int:mentor_id>/status/', UpdateVerificationStatusView.as_view(), name='update-mentor-status'),

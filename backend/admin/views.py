@@ -287,3 +287,5 @@ class AdminDashboardStatsView(APIView):
             "user_signups_last_7_days": signups_last_7_days,
         }
         return Response(data)
+
+

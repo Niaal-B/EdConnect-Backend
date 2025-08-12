@@ -514,3 +514,10 @@ class MentorEarningsAPIView(APIView):
 
 
         
+
+class MentorDashboardStatsView(APIView):
+    def get(self,request,*args,**kwargs):
+        mentor = self.request.user
+
+
+        print(request.user)

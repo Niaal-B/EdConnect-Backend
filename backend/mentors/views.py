@@ -31,6 +31,8 @@ from .serializers import (MentorLoginSerializer, MentorProfileSerializer,
                           ProfilePictureSerializer, PublicMentorSerializer,
                           SlotSerializer, VerificationDocumentSerializer)
 
+from connections.models import Connection
+from bookings.models import Booking
 
 class MentorLoginView(GenericAPIView):
     serializer_class = MentorLoginSerializer
@@ -516,8 +518,28 @@ class MentorEarningsAPIView(APIView):
         
 
 class MentorDashboardStatsView(APIView):
-    def get(self,request,*args,**kwargs):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
         mentor = self.request.user
+        
+        if mentor.role !='mentor':
+            return
 
 
-        print(request.user)
+        pending_requests_count = Connection.objects.filter(
+            status='pending',mentor=mentor
+        ).count()
+
+
+        confirmed_sessions_count = Booking.objects.filter(
+            status='CONFIRMED',mentor=mentor
+        ).count()
+
+        data = {
+            "pending_requests_count": pending_requests_count,
+            "confirmed_sessions_count": confirmed_sessions_count,
+        }
+        
+        return Response(data)

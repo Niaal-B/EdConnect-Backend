@@ -6,7 +6,7 @@ from bookings.models import Booking
 from bookings.serializers import BookingSerializer, MentorBookingsSerializer
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q,Case,When,Value,IntegerField
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
@@ -162,10 +162,21 @@ class StudentBookingsAPIView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return Booking.objects.filter(
-            Q(student=user) &
-            Q(status__in=['CONFIRMED']) & 
-            Q(payment_status__in=['PAID'])
-        ).select_related('slot__mentor').order_by('-created_at')
+            student=user
+        ).select_related('slot__mentor').order_by(
+            Case(
+                When(status='CONFIRMED', booked_start_time__gte=timezone.now(), then=Value(1)),
+                When(status='PENDING_PAYMENT', then=Value(2)),
+                When(status='CONFIRMED', booked_start_time__lt=timezone.now(), then=Value(3)),
+                default=Value(4),
+                output_field=IntegerField(),
+            ),
+            Case(
+                When(booked_start_time__gte=timezone.now(), then='booked_start_time'),
+                default=Value(None),
+            ),
+            '-booked_start_time'
+        )
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()

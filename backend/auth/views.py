@@ -48,16 +48,16 @@ class CheckSessionView(GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
         try:
             user = request.user
             profile_picture_url = None
+            is_verified = None  
 
-            # Fetch profile_picture based on role
             if user.role == "mentor":
                 details = MentorDetails.objects.get(user=user)
                 if details.profile_picture:
                     profile_picture_url = request.build_absolute_uri(details.profile_picture.url)
+                is_verified = details.is_verified  
 
             elif user.role == "student":
                 details = StudentDetails.objects.get(user=user)
@@ -75,6 +75,10 @@ class CheckSessionView(GenericAPIView):
                 },
                 "message": "session is valid"
             }
+
+            if user.role == "mentor":
+                response_data["user"]["is_verified"] = is_verified
+
             return Response(response_data)
 
         except Exception as e:

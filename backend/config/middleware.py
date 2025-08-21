@@ -21,8 +21,7 @@ def get_user_from_token(token_key):
         user = User.objects.get(id=user_id)
         return user
     except (InvalidToken, TokenError, User.DoesNotExist) as e:
-        print(f"JWT validation failed or user not found: {e}")
-        return AnonymousUser() # Return AnonymousUser if validation fails
+        return AnonymousUser() 
 
 class JWTAuthMiddleware:
     """

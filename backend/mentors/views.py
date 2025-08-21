@@ -47,6 +47,7 @@ class MentorLoginView(GenericAPIView):
                 "username":user.username,
                 "email": user.email,
                 "role": "mentor",
+                
         }
         },status=status.HTTP_200_OK)
 

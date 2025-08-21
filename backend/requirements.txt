@@ -41,6 +41,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 PyYAML==6.0.2
 pytz
+pycryptodome
 redis==4.5.5
 referencing==0.36.2
 rpds-py==0.25.0

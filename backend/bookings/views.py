@@ -19,6 +19,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import User
+from .zegoserverassistant import generate_token04
+
 
 logger = logging.getLogger(__name__)
 
@@ -371,11 +373,50 @@ class BookingCancelAPIView(generics.UpdateAPIView):
 
             except ValueError as e:
                 logger.error(f"ValueError during cancellation for booking {booking.id}: {e}")
-                return Response({"detail": f"Cancellation error: {e}"},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({"detail": f"Cancellation error: {e}"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             except Exception as e:
                 import traceback
                 traceback.print_exc()
                 return Response({"detail": "An unexpected error occurred during cancellation."},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class GenerateZegoTokenView(APIView):
+    def post(self, request, format=None):
+        try:
+            booking_id = request.data.get('booking_id')
+            user_id = request.data.get('user_id')
+            
+            if not booking_id or not user_id:
+                return Response({'error': 'booking_id and user_id are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                booking = Booking.objects.get(id=booking_id)
+            except Booking.DoesNotExist:
+                return Response({'error': 'Booking not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+            if str(booking.student.id) != str(user_id) and str(booking.mentor.id) != str(user_id):
+                return Response({'error': 'You do not have permission to join this session.'}, status=status.HTTP_403_FORBIDDEN)
+            
+            app_id = settings.ZEGO_APP_ID
+            server_secret = settings.ZEGO_SERVER_SECRET
+            effective_time_in_seconds = 3600
+            print(type(app_id))
+ 
+            token_info = generate_token04(
+                int(app_id), 
+                user_id, 
+                server_secret, 
+                effective_time_in_seconds, 
+                payload=''
+            )
+
+            if token_info.error_code == 0:
+                return Response({'token': token_info.token}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': token_info.error_message}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

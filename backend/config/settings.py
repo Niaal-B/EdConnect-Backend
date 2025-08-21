@@ -325,3 +325,7 @@ STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_fallback_secret
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', 'pk_test_fallback_publishable_key')
 
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+
+
+ZEGO_APP_ID = os.getenv("ZEGO_APP_ID")
+ZEGO_SERVER_SECRET = os.getenv("ZEGO_SERVER_SECRET")

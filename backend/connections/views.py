@@ -37,6 +37,7 @@ class RequestConnectionView(APIView):
 
         student = request.user
         mentor = serializer.validated_data['mentor']
+        
 
         connection = Connection.objects.create(student=student, mentor=mentor)
 

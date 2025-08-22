@@ -15,6 +15,7 @@ class ConnectionSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at']
 
+
 class ConnectionRequestSerializer(serializers.Serializer):
     mentor_id = serializers.IntegerField()
 
@@ -40,8 +41,18 @@ class ConnectionRequestSerializer(serializers.Serializer):
         if Connection.objects.filter(student=student, mentor=mentor).exists():
             raise ValidationError("Connection with this mentor already exists.")
 
+        try:
+            mentor_details = MentorDetails.objects.get(user=mentor)
+        except MentorDetails.DoesNotExist:
+            raise ValidationError({"mentor_id": "Mentor profile does not exist."})
+
+
+        if not mentor_details.countries or len(mentor_details.countries) == 0:
+            raise ValidationError({"mentor_id": "Mentor has not set their country."})
+            
         attrs['mentor'] = mentor
         return attrs
+
 
 
 class ConnectionStatusUpdateSerializer(serializers.ModelSerializer):

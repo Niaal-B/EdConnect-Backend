@@ -163,22 +163,25 @@ class StudentBookingsAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Booking.objects.filter(
-            student=user
-        ).select_related('slot__mentor').order_by(
-            Case(
-                When(status='CONFIRMED', booked_start_time__gte=timezone.now(), then=Value(1)),
-                When(status='PENDING_PAYMENT', then=Value(2)),
-                When(status='CONFIRMED', booked_start_time__lt=timezone.now(), then=Value(3)),
-                default=Value(4),
-                output_field=IntegerField(),
-            ),
-            Case(
-                When(booked_start_time__gte=timezone.now(), then='booked_start_time'),
-                default=Value(None),
-            ),
-            '-booked_start_time'
+        return (
+            Booking.objects.filter(student=user)
+            .exclude(status="PENDING_PAYMENT")
+            .select_related("slot__mentor")
+            .order_by(
+                Case(
+                    When(status="CONFIRMED", booked_start_time__gte=timezone.now(), then=Value(1)),
+                    When(status="CONFIRMED", booked_start_time__lt=timezone.now(), then=Value(2)),
+                    default=Value(3),
+                    output_field=IntegerField(),
+                ),
+                Case(
+                    When(booked_start_time__gte=timezone.now(), then="booked_start_time"),
+                    default=Value(None),
+                ),
+                "-booked_start_time",
+            )
         )
+
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -199,11 +202,22 @@ class MentorBookingsAPIView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return Booking.objects.filter(
-            mentor=user,status__in=['CONFIRMED'],payment_status__in=['PAID']).select_related('student').order_by('-created_at')
-
-
-
-
+            mentor=user
+        ).exclude(
+            status__in=['PENDING', 'PENDING_PAYMENT']
+        ).select_related('student').order_by(
+            Case(
+                When(status='CONFIRMED', booked_start_time__gte=timezone.now(), then=Value(1)),
+                When(status='CONFIRMED', booked_start_time__lt=timezone.now(), then=Value(2)),
+                default=Value(3),
+                output_field=IntegerField(),
+            ),
+            Case(
+                When(booked_start_time__gte=timezone.now(), then='booked_start_time'),
+                default=Value(None),
+            ),
+            '-booked_start_time'
+        )
 
 @csrf_exempt
 @require_POST

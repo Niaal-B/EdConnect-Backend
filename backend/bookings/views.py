@@ -20,7 +20,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import User
 from .zegoserverassistant import generate_token04
-
+from notifications.tasks import send_realtime_notification_task
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,6 @@ class BookingCreateAPIView(generics.CreateAPIView):
                 slot = Slot.objects.select_for_update().get(id=slot_id, status='available')
 
                 mentor = slot.mentor
-                print(mentor,"this is the mentor")
                 stripe_account_id = MentorDetails.objects.get(user=mentor).stripe_account_id
                 print(stripe_account_id)
                 if not stripe_account_id:

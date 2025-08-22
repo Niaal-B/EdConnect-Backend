@@ -11,7 +11,9 @@ from students.serializers import (StudentDetailsSerializer,
                                   StudentLoginSerializer)
 from users.serializers import UserSerializer
 from users.utils import set_jwt_cookies
-
+from connections.models import Connection
+from rest_framework.views import APIView
+from bookings.models import Booking
 
 class StudentLoginView(GenericAPIView):
     serializer_class = StudentLoginSerializer
@@ -50,3 +52,31 @@ class StudentProfileView(RetrieveUpdateAPIView):
             raise PermissionDenied("Cannot modify user relationship")
         
         return super().update(request, *args, **kwargs)
+
+
+class StudentDashboardStatsView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        student = self.request.user
+        
+        if student.role !='student':
+            return
+
+
+        connected_mentors_count = Connection.objects.filter(
+            status='accepted',student=student
+        ).count()
+
+
+        confirmed_sessions_count = Booking.objects.filter(
+            status='CONFIRMED',student=student
+        ).count()
+
+        data = {
+            "connected_mentors_count": connected_mentors_count,
+            "confirmed_sessions_count": confirmed_sessions_count,
+        }
+        
+        return Response(data)

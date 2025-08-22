@@ -9,7 +9,12 @@ from django.contrib.auth import get_user_model
 from .models import Notification
 from .serializers import NotificationSerializer
 
+import logging
+
 User = get_user_model()
+
+
+logger = logging.getLogger(__name__)
 
 @shared_task(bind=True) # `bind=True` allows the task to access itself for retries etc.
 def send_realtime_notification_task(self, recipient_id, sender_id, notification_type, message, related_object_id=None, related_object_type=None):
@@ -44,6 +49,8 @@ def send_realtime_notification_task(self, recipient_id, sender_id, notification_
                 }
             )
         )
+        logger.info("Message send")
 
     except Exception as exc:
+        logger.error("Some error happened")
         self.retry(exc=exc, countdown=60, max_retries=5)

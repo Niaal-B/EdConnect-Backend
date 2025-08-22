@@ -12,7 +12,9 @@ class Notification(models.Model):
         ("connection_request_cancelled", "Connection Request Cancelled"),
         ("session_cancelled", "Session Cancelled"),
         ("mentor_approved", "Mentor Approved"),
-        ("mentor_rejected", "Mentor Rejected")
+        ("mentor_rejected", "Mentor Rejected"),
+        ("booking_cancelled", "Booking Cancelled"),
+
     ]
     notification_type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)
     message = models.CharField(max_length=255)

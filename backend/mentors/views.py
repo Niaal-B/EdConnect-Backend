@@ -29,7 +29,7 @@ from users.utils import set_jwt_cookies
 from .serializers import (MentorLoginSerializer, MentorProfileSerializer,
                           MentorProfileUpdateSerializer,
                           ProfilePictureSerializer, PublicMentorSerializer,
-                          SlotSerializer, VerificationDocumentSerializer)
+                          SlotSerializer, VerificationDocumentSerializer,UpcomingBookingSerializer)
 
 from connections.models import Connection
 from bookings.models import Booking
@@ -123,6 +123,7 @@ class DocumentUploadView(APIView):
         serializer = VerificationDocumentSerializer(data=request.data)  
         serializer.is_valid(raise_exception=True)
         serializer.save(mentor=request.user) 
+        
 
         return Response({
             'status': 'success',
@@ -544,6 +545,26 @@ class MentorDashboardStatsView(APIView):
         }
         
         return Response(data)
+
+
+
+class UpcomingSessionsView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        mentor = request.user
+        if mentor.role != "mentor":
+            return Response({"detail": "Only students can access this."}, status=403)
+
+        upcoming_sessions = Booking.objects.filter(
+            mentor=mentor,
+            status="CONFIRMED",
+        )[:5]
+        print(upcoming_sessions)
+
+        serializer = UpcomingBookingSerializer(upcoming_sessions, many=True)
+        return Response(serializer.data)
 
 
 

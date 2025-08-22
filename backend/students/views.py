@@ -14,6 +14,8 @@ from users.utils import set_jwt_cookies
 from connections.models import Connection
 from rest_framework.views import APIView
 from bookings.models import Booking
+from django.utils import timezone
+
 
 class StudentLoginView(GenericAPIView):
     serializer_class = StudentLoginSerializer
@@ -80,3 +82,5 @@ class StudentDashboardStatsView(APIView):
         }
         
         return Response(data)
+
+

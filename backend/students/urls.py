@@ -4,5 +4,6 @@ from students.views import StudentLoginView, StudentProfileView,StudentDashboard
 urlpatterns = [
     path('login/',StudentLoginView.as_view(),name="student-login"),
     path('profile/', StudentProfileView.as_view(), name='student-profile'),
-    path('dashboard/',StudentDashboardStatsView.as_view(),name='student-dashboard')
+    path('dashboard/',StudentDashboardStatsView.as_view(),name='student-dashboard'),
+
 ]

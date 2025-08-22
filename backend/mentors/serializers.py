@@ -6,7 +6,8 @@ from django.utils import timezone
 from mentors.models import Education, MentorDetails, Slot, VerificationDocument
 from rest_framework import serializers
 from users.models import User
-
+from students.models import StudentDetails
+from bookings.models import Booking
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -130,3 +131,29 @@ class SlotReadOnlySerializer(serializers.ModelSerializer):
         model = Slot
         fields = ['id', 'start_time', 'end_time', 'fee', 'timezone', 'status']
         read_only_fields = fields
+
+class StudentsDetailsForBookingSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source="user.firstname", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+
+    class Meta:
+        model = StudentDetails
+        fields = [
+            "full_name",
+            "email",
+            "profile_picture",
+        ]
+
+
+class UpcomingBookingSerializer(serializers.ModelSerializer):
+    student_details = StudentsDetailsForBookingSerializer(source="mentor.mentor_profile", read_only=True)
+
+    class Meta:
+        model = Booking
+        fields = [
+            "id",
+            "booked_start_time",
+            "booked_end_time",
+            "status",
+            "student_details",
+        ]

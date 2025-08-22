@@ -3,7 +3,8 @@ from rest_framework import serializers
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from students.models import StudentDetails
 from users.serializers import UserSerializer
-
+from mentors.models import MentorDetails
+from bookings.models import Booking
 
 class StudentLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -37,3 +38,5 @@ class StudentDetailsSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
         
+
+

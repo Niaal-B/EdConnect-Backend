@@ -98,3 +98,32 @@ class BookingCalendarEvent(models.Model):
 
     def __str__(self):
         return f"Event for Booking {self.booking.id} ({self.user.username})"
+
+
+class Feedback(models.Model):
+    booking = models.OneToOneField(
+        Booking, 
+        on_delete=models.CASCADE, 
+        related_name='feedback',
+        help_text="The booking this feedback is for."
+    )
+    rating = models.PositiveSmallIntegerField(
+        help_text="Rating given by the student (1 to 5)."
+    )
+    comment = models.TextField(
+        blank=True,
+        help_text="Optional comments from the student."
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='submitted_feedback',
+        help_text="The user who submitted this feedback."
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Feedback for Booking {self.booking.id} - Rating: {self.rating}"
+
+    class Meta:
+        verbose_name_plural = "Feedback"

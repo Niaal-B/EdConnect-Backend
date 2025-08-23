@@ -161,6 +161,7 @@ class StudentBookingsAPIView(generics.ListAPIView):
     serializer_class = BookingSerializer
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         user = self.request.user
@@ -199,6 +200,7 @@ class MentorBookingsAPIView(generics.ListAPIView):
     serializer_class = MentorBookingsSerializer
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         user = self.request.user

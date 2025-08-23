@@ -1,4 +1,4 @@
-from bookings.models import Booking
+from bookings.models import Booking,Feedback
 from mentors.models import Slot
 from mentors.serializers import MentorProfileSerializer
 from rest_framework import serializers
@@ -99,3 +99,8 @@ class MentorBookingsSerializer(serializers.ModelSerializer):
 
 
 
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feedback
+        fields = ['booking', 'rating', 'comment', 'submitted_by', 'submitted_at']
+        read_only_fields = ['submitted_by', 'submitted_at']

@@ -2,8 +2,8 @@ import logging
 
 import stripe
 from auth.authentication import CookieJWTAuthentication
-from bookings.models import Booking
-from bookings.serializers import BookingSerializer, MentorBookingsSerializer
+from bookings.models import Booking,Feedback
+from bookings.serializers import BookingSerializer, MentorBookingsSerializer,FeedbackSerializer
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q,Case,When,Value,IntegerField
@@ -21,7 +21,7 @@ from rest_framework.views import APIView
 from users.models import User
 from .zegoserverassistant import generate_token04
 from notifications.tasks import send_realtime_notification_task
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied,ValidationError
 
 
 logger = logging.getLogger(__name__)
@@ -461,3 +461,26 @@ class CompleteBookingView(APIView):
 
         return Response({"detail": "Session marked as completed."}, status=status.HTTP_200_OK)
 
+class FeedbackCreateView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = FeedbackSerializer(data=request.data)
+        if serializer.is_valid():
+            booking_id = serializer.validated_data['booking'].id
+            
+            if Feedback.objects.filter(booking_id=booking_id, submitted_by=request.user).exists():
+                raise ValidationError({"detail": "Feedback for this booking has already been submitted."})
+
+            try:
+                booking = Booking.objects.get(id=booking_id)
+                if request.user != booking.student or booking.status != 'COMPLETED':
+                    raise PermissionDenied("You do not have permission to submit feedback for this session, or the session is not yet completed.")
+            except Booking.DoesNotExist:
+                raise NotFound("Booking not found.")
+
+            serializer.save(submitted_by=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        raise ValidationError(serializer.errors)

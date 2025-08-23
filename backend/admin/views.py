@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from admin.serializers import (AdminLoginSerializer, MentorApprovalSerializer,
-                               MentorVerificationSerializer)
+                               MentorVerificationSerializer,BookingSerializer)
 from auth.authentication import CookieJWTAuthentication
 from django.contrib.auth import get_user_model
 from django.db.models import Count
@@ -256,6 +256,9 @@ class RejectedMentorsView(generics.ListAPIView):
 
 
 class AdminDashboardStatsView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAdminUser]
+
     def get(self, request, *args, **kwargs):
         total_users = User.objects.filter(is_active=True).count()
 
@@ -289,3 +292,13 @@ class AdminDashboardStatsView(APIView):
         return Response(data)
 
 
+
+class AdminBookingsView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        all_bookings = Booking.objects.all().order_by('-created_at')
+        serializer = BookingSerializer(all_bookings, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+   

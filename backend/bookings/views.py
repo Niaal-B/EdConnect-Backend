@@ -21,6 +21,8 @@ from rest_framework.views import APIView
 from users.models import User
 from .zegoserverassistant import generate_token04
 from notifications.tasks import send_realtime_notification_task
+from rest_framework.exceptions import NotFound, PermissionDenied
+
 
 logger = logging.getLogger(__name__)
 
@@ -437,4 +439,23 @@ class GenerateZegoTokenView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+
+class CompleteBookingView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk, *args, **kwargs):
+        try:
+            booking = Booking.objects.get(pk=pk)
+        except Booking.DoesNotExist:
+            raise NotFound(detail="Booking not found.")
+
+        if request.user != booking.student and request.user != booking.mentor:
+            raise PermissionDenied(detail="You do not have permission to perform this action.")
+
+        booking.status = 'COMPLETED'
+        booking.save()
+
+        return Response({"detail": "Session marked as completed."}, status=status.HTTP_200_OK)
 

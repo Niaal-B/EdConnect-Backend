@@ -4,7 +4,7 @@ from mentors.views import (DocumentUploadView, MentorEarningsAPIView,
                            MentorSlotCancelView, MentorSlotListCreateView,
                            MentorStripeOnboardingView, ProfilePictureView,
                            PublicMentorListView,MentorDashboardStatsView,
-                           UpcomingSessionsView)
+                           UpcomingSessionsView,MentorFeedbackView)
 
 urlpatterns = [
     path('login/',MentorLoginView.as_view(),name='mentor-login'),
@@ -17,7 +17,9 @@ urlpatterns = [
     path('stripe/onboard/', MentorStripeOnboardingView.as_view(), name='mentor-stripe-onboard'),
     path('earnings/', MentorEarningsAPIView.as_view(), name='mentor-earnings'),
     path('dashboard/stats',MentorDashboardStatsView.as_view(),name='mentor-dashboard'),
-    path('upcoming-sessions/',UpcomingSessionsView.as_view(),name='sessions-dashboard')
+    path('upcoming-sessions/',UpcomingSessionsView.as_view(),name='sessions-dashboard'),
+    path('feedback/', MentorFeedbackView.as_view(), name='mentor-feedback'),
+
 
 
 

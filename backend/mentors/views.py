@@ -32,7 +32,8 @@ from .serializers import (MentorLoginSerializer, MentorProfileSerializer,
                           SlotSerializer, VerificationDocumentSerializer,UpcomingBookingSerializer)
 
 from connections.models import Connection
-from bookings.models import Booking
+from bookings.models import Booking,Feedback
+from bookings.serializers import FeedbackSerializer
 
 class MentorLoginView(GenericAPIView):
     serializer_class = MentorLoginSerializer
@@ -569,3 +570,13 @@ class UpcomingSessionsView(APIView):
 
 
 
+class MentorFeedbackView(ListAPIView):
+    """
+    API view to list all feedback for the authenticated mentor.
+    """
+    authentication_classes = [CookieJWTAuthentication]
+    serializer_class = FeedbackSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Feedback.objects.filter(booking__mentor=self.request.user).order_by('-submitted_at')

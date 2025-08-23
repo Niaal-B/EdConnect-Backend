@@ -100,7 +100,15 @@ class MentorBookingsSerializer(serializers.ModelSerializer):
 
 
 class FeedbackSerializer(serializers.ModelSerializer):
+    student_details = serializers.SerializerMethodField()
+
     class Meta:
         model = Feedback
-        fields = ['booking', 'rating', 'comment', 'submitted_by', 'submitted_at']
-        read_only_fields = ['submitted_by', 'submitted_at']
+        fields = ['booking', 'rating', 'comment', 'submitted_by', 'submitted_at', 'student_details']
+        read_only_fields = ['submitted_by', 'submitted_at', 'student_details']
+
+    def get_student_details(self, obj):
+        profile = getattr(obj.submitted_by, 'student_profile', None)
+        if profile:
+            return StudentDetailsSerializer(profile).data
+        return None

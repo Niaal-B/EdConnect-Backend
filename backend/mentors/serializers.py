@@ -1,10 +1,13 @@
-from rest_framework import serializers
+from datetime import timedelta
+
 from django.contrib.auth import authenticate
-from mentors.models import MentorDetails,Education,VerificationDocument,Slot
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
-from datetime import timedelta
+from mentors.models import Education, MentorDetails, Slot, VerificationDocument
+from rest_framework import serializers
 from users.models import User
+from students.models import StudentDetails
+from bookings.models import Booking
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -39,13 +42,27 @@ class VerificationDocumentSerializer(serializers.ModelSerializer):
 
 class MentorProfileSerializer(serializers.ModelSerializer):
     educations = EducationSerializer(many=True, read_only=True)
-    documents = VerificationDocumentSerializer(many=True, read_only=True)
+    documents = serializers.SerializerMethodField()
     user = UserSerializer(read_only=True)
     
     class Meta:
         model = MentorDetails
         fields = '__all__'
         read_only_fields = ['user', 'is_verified']
+
+    def get_documents(self, obj):
+        request = self.context.get('request', None)
+        return [
+            {
+                "id": doc.id,
+                "document_type": doc.document_type,
+                "file": request.build_absolute_uri(doc.file.url) if request else doc.file.url,
+                "is_approved": doc.is_approved,
+                "uploaded_at": doc.uploaded_at,
+            }
+            for doc in obj.user.documents.all()
+        ]
+
 
 class MentorProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -114,3 +131,29 @@ class SlotReadOnlySerializer(serializers.ModelSerializer):
         model = Slot
         fields = ['id', 'start_time', 'end_time', 'fee', 'timezone', 'status']
         read_only_fields = fields
+
+class StudentsDetailsForBookingSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source="user.firstname", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+
+    class Meta:
+        model = StudentDetails
+        fields = [
+            "full_name",
+            "email",
+            "profile_picture",
+        ]
+
+
+class UpcomingBookingSerializer(serializers.ModelSerializer):
+    student_details = StudentsDetailsForBookingSerializer(source="mentor.mentor_profile", read_only=True)
+
+    class Meta:
+        model = Booking
+        fields = [
+            "id",
+            "booked_start_time",
+            "booked_end_time",
+            "status",
+            "student_details",
+        ]

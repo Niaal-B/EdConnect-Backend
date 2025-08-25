@@ -1,5 +1,6 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
+
 
 class ChatRoom(models.Model):
     """
@@ -61,6 +62,9 @@ class Message(models.Model):
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
+
+    file = models.FileField(upload_to='chat_media/', blank=True, null=True)
+    file_type = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
         """

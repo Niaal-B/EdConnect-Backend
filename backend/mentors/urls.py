@@ -1,8 +1,10 @@
 from django.urls import path
-from mentors.views import (MentorLoginView,MentorProfileView,ProfilePictureView,
-                        DocumentUploadView,PublicMentorListView,MentorSlotListCreateView,
-                        MentorSlotCancelView,MentorStripeOnboardingView,MentorEarningsAPIView
-)
+from mentors.views import (DocumentUploadView, MentorEarningsAPIView,
+                           MentorLoginView, MentorProfileView,
+                           MentorSlotCancelView, MentorSlotListCreateView,
+                           MentorStripeOnboardingView, ProfilePictureView,
+                           PublicMentorListView,MentorDashboardStatsView,
+                           UpcomingSessionsView,MentorFeedbackView)
 
 urlpatterns = [
     path('login/',MentorLoginView.as_view(),name='mentor-login'),
@@ -14,6 +16,11 @@ urlpatterns = [
     path('slots/<int:pk>/cancel/', MentorSlotCancelView.as_view(), name='mentor-slot-cancel'),
     path('stripe/onboard/', MentorStripeOnboardingView.as_view(), name='mentor-stripe-onboard'),
     path('earnings/', MentorEarningsAPIView.as_view(), name='mentor-earnings'),
+    path('dashboard/stats',MentorDashboardStatsView.as_view(),name='mentor-dashboard'),
+    path('upcoming-sessions/',UpcomingSessionsView.as_view(),name='sessions-dashboard'),
+    path('feedback/', MentorFeedbackView.as_view(), name='mentor-feedback'),
+
+
 
 
 

@@ -1,33 +1,39 @@
-from rest_framework.views import APIView
-from .serializers import (MentorLoginSerializer,MentorProfileSerializer,ProfilePictureSerializer,
-VerificationDocumentSerializer,MentorProfileUpdateSerializer,PublicMentorSerializer,
-SlotSerializer)
-from rest_framework.response import Response
-from rest_framework import status,permissions
-from users.utils import set_jwt_cookies
-from rest_framework.generics import GenericAPIView,RetrieveUpdateAPIView,ListAPIView,ListCreateAPIView,UpdateAPIView
-from mentors.models import MentorDetails,Slot
-from bookings.models import Booking
-from auth.authentication import CookieJWTAuthentication
-from django.shortcuts import get_object_or_404
-from rest_framework.parsers import MultiPartParser,FormParser,JSONParser
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema, OpenApiTypes, OpenApiParameter, OpenApiExample
-from django_filters.rest_framework import DjangoFilterBackend
-from django_filters import rest_framework as filters
-from django.db import models
-from django.db.models import Q
-import stripe
-from django.conf import settings
-from django.utils import timezone
 import datetime
+
 import pytz
-from django.db.models import Sum, Count
+import stripe
+from auth.authentication import CookieJWTAuthentication
+from bookings.models import Booking
+from django.conf import settings
+from django.db import models
+from django.db.models import Count, Q, Sum
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django_filters import rest_framework as filters
+from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
+                                   OpenApiTypes, extend_schema)
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from mentors.models import MentorDetails, Slot
+from rest_framework import permissions, status
+from rest_framework.generics import (GenericAPIView, ListAPIView,
+                                     ListCreateAPIView, RetrieveUpdateAPIView,
+                                     UpdateAPIView)
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from users.utils import set_jwt_cookies
 
+from .serializers import (MentorLoginSerializer, MentorProfileSerializer,
+                          MentorProfileUpdateSerializer,
+                          ProfilePictureSerializer, PublicMentorSerializer,
+                          SlotSerializer, VerificationDocumentSerializer,UpcomingBookingSerializer)
 
-
+from connections.models import Connection
+from bookings.models import Booking,Feedback
+from bookings.serializers import FeedbackSerializer
 
 class MentorLoginView(GenericAPIView):
     serializer_class = MentorLoginSerializer
@@ -42,6 +48,7 @@ class MentorLoginView(GenericAPIView):
                 "username":user.username,
                 "email": user.email,
                 "role": "mentor",
+                
         }
         },status=status.HTTP_200_OK)
 
@@ -117,6 +124,7 @@ class DocumentUploadView(APIView):
         serializer = VerificationDocumentSerializer(data=request.data)  
         serializer.is_valid(raise_exception=True)
         serializer.save(mentor=request.user) 
+        
 
         return Response({
             'status': 'success',
@@ -158,23 +166,8 @@ class DocumentUploadView(APIView):
         ),
     ]
 )
+
 class PublicMentorListView(ListAPIView):
-    """
-    Enhanced public API to list verified mentors with:
-    - Pagination (10 per page)
-    - Search functionality (name, bio, expertise)
-    - Expertise filtering
-    - Experience range filtering
-    - Error handling
-    
-    Example requests:
-    GET /api/mentors/                                    # All mentors (page 1)
-    GET /api/mentors/?page=2                             # Page 2
-    GET /api/mentors/?expertise=python                   # Filter by expertise
-    GET /api/mentors/?experience_min=5                   # 5+ years experience
-    GET /api/mentors/?search=machine learning            # Search functionality
-    GET /api/mentors/?search=john&expertise=python       # Combined search and filter
-    """
     
     serializer_class = PublicMentorSerializer
     
@@ -182,62 +175,49 @@ class PublicMentorListView(ListAPIView):
         try:
             queryset = MentorDetails.objects.filter(is_verified=True).select_related('user')
             
-            # 1. Search functionality - searches across username, bio, and expertise
             search_query = self.request.query_params.get('search', '').strip()
             if search_query:
                 search_terms = search_query.split()
                 search_q = Q()
                 
                 for term in search_terms:
-                    # Search in username (from related User model)
                     search_q |= Q(user__username__icontains=term)
-                    # Search in bio
                     search_q |= Q(bio__icontains=term)
-                    # Search in expertise (assuming it's a text field or JSON field)
                     search_q |= Q(expertise__icontains=term)
                 
                 queryset = queryset.filter(search_q)
             
-            # 2. Filter by expertise (case-insensitive partial match)
             expertise = self.request.query_params.get('expertise', '').strip()
             if expertise:
                 queryset = queryset.filter(expertise__icontains=expertise)
             
-            # 3. Filter by minimum experience
             exp_min = self.request.query_params.get('experience_min')
             if exp_min:
                 try:
                     exp_min_int = int(exp_min)
                     queryset = queryset.filter(experience_years__gte=exp_min_int)
                 except ValueError:
-                    pass  # Ignore invalid values
+                    pass  
             
-            # 4. Filter by maximum experience
             exp_max = self.request.query_params.get('experience_max')
             if exp_max:
                 try:
                     exp_max_int = int(exp_max)
                     queryset = queryset.filter(experience_years__lte=exp_max_int)
                 except ValueError:
-                    pass  # Ignore invalid values
+                    pass  
             
-            # Order by experience (most experienced first) and then by username
             return queryset.order_by('-experience_years', 'user__username').distinct()
             
         except Exception as e:
-            # Log the error in production
-            print(f"Error in queryset: {str(e)}")
             return MentorDetails.objects.none()
     
     def list(self, request, *args, **kwargs):
         try:
-            # Get the base response from DRF's ListAPIView
             response = super().list(request, *args, **kwargs)
             
-            # Get current page number
             page_number = int(request.query_params.get('page', 1))
             
-            # Custom response format to match frontend expectations
             custom_response = {
                 'success': True,
                 'mentors': response.data['results'],
@@ -249,7 +229,6 @@ class PublicMentorListView(ListAPIView):
                 'previous_page': page_number - 1 if response.data['previous'] else None,
             }
             
-            # Add search/filter info if present
             search_query = request.query_params.get('search', '').strip()
             expertise = request.query_params.get('expertise', '').strip()
             exp_min = request.query_params.get('experience_min')
@@ -540,3 +519,64 @@ class MentorEarningsAPIView(APIView):
 
 
         
+
+class MentorDashboardStatsView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        mentor = self.request.user
+        
+        if mentor.role !='mentor':
+            return
+
+
+        pending_requests_count = Connection.objects.filter(
+            status='pending',mentor=mentor
+        ).count()
+
+
+        confirmed_sessions_count = Booking.objects.filter(
+            status='CONFIRMED',mentor=mentor
+        ).count()
+
+        data = {
+            "pending_requests_count": pending_requests_count,
+            "confirmed_sessions_count": confirmed_sessions_count,
+        }
+        
+        return Response(data)
+
+
+
+class UpcomingSessionsView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        mentor = request.user
+        if mentor.role != "mentor":
+            return Response({"detail": "Only students can access this."}, status=403)
+
+        upcoming_sessions = Booking.objects.filter(
+            mentor=mentor,
+            status="CONFIRMED",
+        )[:5]
+        print(upcoming_sessions)
+
+        serializer = UpcomingBookingSerializer(upcoming_sessions, many=True)
+        return Response(serializer.data)
+
+
+
+
+class MentorFeedbackView(ListAPIView):
+    """
+    API view to list all feedback for the authenticated mentor.
+    """
+    authentication_classes = [CookieJWTAuthentication]
+    serializer_class = FeedbackSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Feedback.objects.filter(booking__mentor=self.request.user).order_by('-submitted_at')

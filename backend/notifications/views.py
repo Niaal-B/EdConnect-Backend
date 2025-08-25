@@ -1,9 +1,11 @@
+from auth.authentication import CookieJWTAuthentication
 from django.shortcuts import render
 from rest_framework.generics import ListAPIView
-from auth.authentication import CookieJWTAuthentication
 from rest_framework.permissions import IsAuthenticated
-from .serializers import NotificationSerializer
+
 from .models import Notification
+from .serializers import NotificationSerializer
+
 
 class NotificationListView(ListAPIView):
     authentication_classes = [CookieJWTAuthentication]

@@ -1,8 +1,8 @@
 import os
-from pathlib import Path
-from dotenv import load_dotenv
 from datetime import timedelta
+from pathlib import Path
 
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -63,7 +63,8 @@ INSTALLED_APPS = [
 SITE_ID = 1
 
 
-PLATFORM_BASE_URL = "http://localhost:3000"
+PLATFORM_BASE_URL = os.getenv('PLATFORM_BASE_URL')
+
 PLATFORM_FEE_PERCENTAGE = 0.10
 
 
@@ -133,6 +134,7 @@ CHANNEL_LAYERS = {
 }
 
 import logging
+
 logging.getLogger('channels_redis').setLevel(logging.WARNING)
 
 
@@ -323,3 +325,7 @@ STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_fallback_secret
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', 'pk_test_fallback_publishable_key')
 
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+
+
+ZEGO_APP_ID = os.getenv("ZEGO_APP_ID")
+ZEGO_SERVER_SECRET = os.getenv("ZEGO_SERVER_SECRET")

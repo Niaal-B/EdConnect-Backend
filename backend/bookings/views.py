@@ -1,26 +1,31 @@
-from django.shortcuts import render
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from auth.authentication import CookieJWTAuthentication
+import logging
+
 import stripe
+from auth.authentication import CookieJWTAuthentication
+from bookings.models import Booking,Feedback
+from bookings.serializers import BookingSerializer, MentorBookingsSerializer,FeedbackSerializer
 from django.conf import settings
-from django.db import transaction 
-from django.shortcuts import get_object_or_404 
+from django.db import transaction
+from django.db.models import Q,Case,When,Value,IntegerField
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST   
-from django.http import JsonResponse, HttpResponse
-from django.db.models import Q
-from django.utils import timezone 
-
-
-
-from bookings.models import Booking
-from bookings.serializers import BookingSerializer,MentorBookingsSerializer
-from mentors.models import Slot,MentorDetails
-from users.models import User
-from rest_framework.views import APIView
+from django.views.decorators.http import require_POST
+from mentors.models import MentorDetails, Slot
 from notifications.tasks import send_realtime_notification_task
+from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from users.models import User
+from .zegoserverassistant import generate_token04
+from notifications.tasks import send_realtime_notification_task
+from rest_framework.exceptions import NotFound, PermissionDenied,ValidationError
+
+
+logger = logging.getLogger(__name__)
+
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -40,7 +45,6 @@ class BookingCreateAPIView(generics.CreateAPIView):
                 slot = Slot.objects.select_for_update().get(id=slot_id, status='available')
 
                 mentor = slot.mentor
-                print(mentor,"this is the mentor")
                 stripe_account_id = MentorDetails.objects.get(user=mentor).stripe_account_id
                 print(stripe_account_id)
                 if not stripe_account_id:
@@ -132,7 +136,7 @@ class BookingCreateAPIView(generics.CreateAPIView):
                 return Response({"detail": f"Payment initiation failed: {e.user_message or 'Stripe API error'}"},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             except Exception as e:
-                print(e)
+                logger.error(e)
                 return Response({"detail": "An unexpected error occurred during booking."},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -157,36 +161,66 @@ class StudentBookingsAPIView(generics.ListAPIView):
     serializer_class = BookingSerializer
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         user = self.request.user
-        return Booking.objects.filter(
-            Q(student=user) &
-            Q(status__in=['CONFIRMED']) & 
-            Q(payment_status__in=['PAID'])
-        ).select_related('slot__mentor').order_by('-created_at')
+        return (
+            Booking.objects.filter(student=user)
+            .exclude(status="PENDING_PAYMENT")
+            .select_related("slot__mentor")
+            .order_by(
+                Case(
+                    When(status="CONFIRMED", booked_start_time__gte=timezone.now(), then=Value(1)),
+                    When(status="CONFIRMED", booked_start_time__lt=timezone.now(), then=Value(2)),
+                    default=Value(3),
+                    output_field=IntegerField(),
+                ),
+                Case(
+                    When(booked_start_time__gte=timezone.now(), then="booked_start_time"),
+                    default=Value(None),
+                ),
+                "-booked_start_time",
+            )
+        )
+
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        if not queryset.exists():
-            return Response({"message": "No confirmed bookings found for this student."}, status=status.HTTP_200_OK)
+        page = self.paginate_queryset(queryset) 
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)        
+        return Response(serializer.data)
+        
 
 class MentorBookingsAPIView(generics.ListAPIView):
     serializer_class = MentorBookingsSerializer
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         user = self.request.user
         return Booking.objects.filter(
-            mentor=user,status__in=['CONFIRMED'],payment_status__in=['PAID']).select_related('student').order_by('-created_at')
-
-
-
-
+            mentor=user
+        ).exclude(
+            status__in=['PENDING', 'PENDING_PAYMENT']
+        ).select_related('student').order_by(
+            Case(
+                When(status='CONFIRMED', booked_start_time__gte=timezone.now(), then=Value(1)),
+                When(status='CONFIRMED', booked_start_time__lt=timezone.now(), then=Value(2)),
+                default=Value(3),
+                output_field=IntegerField(),
+            ),
+            Case(
+                When(booked_start_time__gte=timezone.now(), then='booked_start_time'),
+                default=Value(None),
+            ),
+            '-booked_start_time'
+        )
 
 @csrf_exempt
 @require_POST
@@ -229,26 +263,24 @@ def stripe_webhook(request):
                             slot.status = 'booked'
                             slot.save()
                         elif slot.status == 'booked':
-                            # Slot might have been booked by another means or already updated.
-                            # Log this as an informational message rather than an error.
-                            print(f"Webhook: Slot {slot_id} already marked booked. Booking {booking_id} confirmed.")
+                            pass
                         else:
                              # Handle other unexpected slot statuses if needed
-                            print(f"Webhook: Slot {slot_id} has unexpected status {slot.status}. Booking {booking_id} confirmed.")
+                            logger.error(f"Webhook: Slot {slot_id} has unexpected status {slot.status}. Booking {booking_id} confirmed.")
 
 
-                    print(f"Booking {booking_id} and Slot {slot_id} updated to CONFIRMED/booked via webhook.")
+                    logger.debug(f"Booking {booking_id} and Slot {slot_id} updated to CONFIRMED/booked via webhook.")
                 except Booking.DoesNotExist:
-                    print(f"Webhook: Booking with ID {booking_id} not found.")
+                    logger.error(f"Webhook: Booking with ID {booking_id} not found.")
                     return HttpResponse(status=404)
                 except Slot.DoesNotExist:
-                    print(f"Webhook: Slot with ID {slot_id} not found for booking {booking_id}.")
+                    logger.error(f"Webhook: Slot with ID {slot_id} not found for booking {booking_id}.")
                     return HttpResponse(status=404)
                 except Exception as e:
-                    print(f"Webhook processing error for booking {booking_id}: {e}")
+                    logger.error(f"Webhook processing error for booking {booking_id}: {e}")
                     return HttpResponse(status=500)
         else:
-            print("Webhook received without booking_id in metadata. Session ID:", session.id)
+            logger.error("Webhook received without booking_id in metadata. Session ID:", session.id)
 
     elif event['type'] == 'payment_intent.succeeded':
 
@@ -299,10 +331,15 @@ class BookingCancelAPIView(generics.UpdateAPIView):
                     else:
                         refund_amount_cents = 0
                         booking_new_status = 'CANCELED_BY_STUDENT_NO_REFUND'
+                    
+                    slot.status = 'available' 
+                    slot.save()
 
                 elif cancelling_user == booking.mentor:
                     refund_amount_cents = int(booking.booked_fee * 100)
                     booking_new_status = 'CANCELED_BY_MENTOR'
+                    slot.status = 'unavailable' 
+                    slot.save()
 
                 if refund_amount_cents > 0:
                     if not booking.stripe_payment_intent_id:
@@ -330,11 +367,11 @@ class BookingCancelAPIView(generics.UpdateAPIView):
                 booking.cancelled_at = now
                 booking.save()
 
-                slot.status = 'unavailable' 
-                slot.save()
+
 
                 #need to create task to remove the event from calendar
                 #need to create task to send notification
+                
 
 
                 return Response({
@@ -355,12 +392,95 @@ class BookingCancelAPIView(generics.UpdateAPIView):
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             except ValueError as e:
-                print(f"ValueError during cancellation for booking {booking.id}: {e}")
-                return Response({"detail": f"Cancellation error: {e}"},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                logger.error(f"ValueError during cancellation for booking {booking.id}: {e}")
+                return Response({"detail": f"Cancellation error: {e}"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             except Exception as e:
                 import traceback
                 traceback.print_exc()
                 return Response({"detail": "An unexpected error occurred during cancellation."},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class GenerateZegoTokenView(APIView):
+    def post(self, request, format=None):
+        try:
+            booking_id = request.data.get('booking_id')
+            user_id = request.data.get('user_id')
+            
+            if not booking_id or not user_id:
+                return Response({'error': 'booking_id and user_id are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                booking = Booking.objects.get(id=booking_id)
+            except Booking.DoesNotExist:
+                return Response({'error': 'Booking not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+            if str(booking.student.id) != str(user_id) and str(booking.mentor.id) != str(user_id):
+                return Response({'error': 'You do not have permission to join this session.'}, status=status.HTTP_403_FORBIDDEN)
+            
+            app_id = settings.ZEGO_APP_ID
+            server_secret = settings.ZEGO_SERVER_SECRET
+            effective_time_in_seconds = 3600
+            print(type(app_id))
+ 
+            token_info = generate_token04(
+                int(app_id), 
+                user_id, 
+                server_secret, 
+                effective_time_in_seconds, 
+                payload=''
+            )
+
+            if token_info.error_code == 0:
+                return Response({'token': token_info.token}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': token_info.error_message}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class CompleteBookingView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk, *args, **kwargs):
+        try:
+            booking = Booking.objects.get(pk=pk)
+        except Booking.DoesNotExist:
+            raise NotFound(detail="Booking not found.")
+
+        if request.user != booking.student and request.user != booking.mentor:
+            raise PermissionDenied(detail="You do not have permission to perform this action.")
+
+        booking.status = 'COMPLETED'
+        booking.save()
+
+        return Response({"detail": "Session marked as completed."}, status=status.HTTP_200_OK)
+
+class FeedbackCreateView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = FeedbackSerializer(data=request.data)
+        if serializer.is_valid():
+            booking_id = serializer.validated_data['booking'].id
+            
+            if Feedback.objects.filter(booking_id=booking_id, submitted_by=request.user).exists():
+                raise ValidationError({"detail": "Feedback for this booking has already been submitted."})
+
+            try:
+                booking = Booking.objects.get(id=booking_id)
+                if request.user != booking.student or booking.status != 'COMPLETED':
+                    raise PermissionDenied("You do not have permission to submit feedback for this session, or the session is not yet completed.")
+            except Booking.DoesNotExist:
+                raise NotFound("Booking not found.")
+
+            serializer.save(submitted_by=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        raise ValidationError(serializer.errors)

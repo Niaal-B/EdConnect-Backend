@@ -1,9 +1,9 @@
 from channels.db import database_sync_to_async
-from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
-from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.tokens import AccessToken
 
 User = get_user_model()
 
@@ -21,8 +21,7 @@ def get_user_from_token(token_key):
         user = User.objects.get(id=user_id)
         return user
     except (InvalidToken, TokenError, User.DoesNotExist) as e:
-        print(f"JWT validation failed or user not found: {e}")
-        return AnonymousUser() # Return AnonymousUser if validation fails
+        return AnonymousUser() 
 
 class JWTAuthMiddleware:
     """

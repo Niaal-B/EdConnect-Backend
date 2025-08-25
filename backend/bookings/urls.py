@@ -1,7 +1,8 @@
 from django.urls import path
-from .views import (BookingCreateAPIView,BookingStatusAPIView,stripe_webhook,StudentBookingsAPIView,
-                    MentorBookingsAPIView,BookingCancelAPIView
-                    )
+
+from .views import (BookingCancelAPIView, BookingCreateAPIView,
+                    BookingStatusAPIView, MentorBookingsAPIView,
+                    StudentBookingsAPIView, stripe_webhook,GenerateZegoTokenView,CompleteBookingView,FeedbackCreateView)
 
 urlpatterns = [
 
@@ -11,6 +12,10 @@ urlpatterns = [
     path('student-bookings/', StudentBookingsAPIView.as_view(), name='student-bookings'), 
     path('mentor-bookings/', MentorBookingsAPIView.as_view(), name='student-bookings'), 
     path('<uuid:pk>/cancel/', BookingCancelAPIView.as_view(), name='booking-cancel'),
+    path('zego/generate-token',GenerateZegoTokenView.as_view(),name='zego-token'),
+    path('<uuid:pk>/complete/', CompleteBookingView.as_view(), name='complete-booking'), 
+    path('feedback/submit/', FeedbackCreateView.as_view(), name='submit-feedback'), 
+
 
 
 

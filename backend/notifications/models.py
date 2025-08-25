@@ -1,5 +1,5 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class Notification(models.Model):
@@ -9,10 +9,13 @@ class Notification(models.Model):
     NOTIFICATION_TYPES = [
         ("connection_request_received", "Connection Request Received"), 
         ("connection_request_accepted", "Connection Request Accepted"), 
-        ("connection_request_cancelled","Connection Request Cancelled"),
-        ("session_cancelled","Session Cancelled")
-    ]
+        ("connection_request_cancelled", "Connection Request Cancelled"),
+        ("session_cancelled", "Session Cancelled"),
+        ("mentor_approved", "Mentor Approved"),
+        ("mentor_rejected", "Mentor Rejected"),
+        ("booking_cancelled", "Booking Cancelled"),
 
+    ]
     notification_type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)
     message = models.CharField(max_length=255)
 

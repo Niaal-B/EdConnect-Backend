@@ -1,28 +1,24 @@
-import os
 import datetime
+import os
 from datetime import timedelta
 
 import requests
+from api.models import UserGoogleTokens
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
-
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
+from mentors.models import MentorDetails
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import Flow
-
-from api.models import UserGoogleTokens
+from students.models import StudentDetails
 from users.models import User
-from students.models import StudentDetails 
-from mentors.models import MentorDetails
-from users.utils import set_jwt_cookies 
-
+from users.utils import set_jwt_cookies
 
 User = get_user_model() 
 

@@ -1,3 +1,4 @@
 from django.contrib import admin
+from mentors.models import MentorDetails
 
-# Register your models here.
+admin.site.register(MentorDetails)

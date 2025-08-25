@@ -1,5 +1,6 @@
+from django.conf import settings
 from django.db import models
-from django.conf import settings 
+
 
 class UserGoogleTokens(models.Model):
     """
@@ -21,6 +22,10 @@ class UserGoogleTokens(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Last Updated At")
+
+    def is_access_token_expired(self):
+        return self.expires_in <= timezone.now() + timezone.timedelta(minutes=5)
+
 
     class Meta:
         verbose_name = "User Google Token"

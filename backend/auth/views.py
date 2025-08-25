@@ -1,26 +1,28 @@
-from django.shortcuts import render
-from rest_framework.generics import GenericAPIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework_simplejwt.exceptions import TokenError
 import logging
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from auth.serializers import UserLoginSerializer
-from users.utils import set_jwt_cookies
-from rest_framework_simplejwt.tokens import AccessToken,RefreshToken
-from .authentication import CookieJWTAuthentication
+
+from auth.serializers import (ForgotPasswordSerializer,
+                              ResetPasswordSerializer, UserLoginSerializer)
 from django.conf import settings
-from rest_framework.views import APIView
-from users.models import User
-from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
-from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
-from users.tasks import send_reset_password_email
-from auth.serializers import ForgotPasswordSerializer,ResetPasswordSerializer
+from django.shortcuts import render
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from drf_yasg.utils import swagger_auto_schema
 from mentors.models import MentorDetails
+from rest_framework import status
+from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from students.models import StudentDetails
+from users.models import User
+from users.tasks import send_reset_password_email
+from users.utils import set_jwt_cookies
+
+from .authentication import CookieJWTAuthentication
 
 logger = logging.getLogger(__name__)
 
@@ -46,16 +48,16 @@ class CheckSessionView(GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
         try:
             user = request.user
             profile_picture_url = None
+            is_verified = None  
 
-            # Fetch profile_picture based on role
             if user.role == "mentor":
                 details = MentorDetails.objects.get(user=user)
                 if details.profile_picture:
                     profile_picture_url = request.build_absolute_uri(details.profile_picture.url)
+                is_verified = details.is_verified  
 
             elif user.role == "student":
                 details = StudentDetails.objects.get(user=user)
@@ -73,6 +75,10 @@ class CheckSessionView(GenericAPIView):
                 },
                 "message": "session is valid"
             }
+
+            if user.role == "mentor":
+                response_data["user"]["is_verified"] = is_verified
+
             return Response(response_data)
 
         except Exception as e:
@@ -91,7 +97,6 @@ class CookieTokenRefreshView(GenericAPIView):
     Custom token refresh view that works with httpOnly cookies
     """
     def post(self, request):
-        # Get refresh token from cookie
         refresh_token = request.COOKIES.get(settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token'))
         
         if not refresh_token:

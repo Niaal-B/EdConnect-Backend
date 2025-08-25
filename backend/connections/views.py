@@ -1,19 +1,23 @@
+from asgiref.sync import sync_to_async
+from auth.authentication import CookieJWTAuthentication
+from chat_app.models import ChatRoom
+from connections.models import Connection
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
+from notifications.tasks import send_realtime_notification_task
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import (NotFound, PermissionDenied,
+                                       ValidationError)
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from connections.models import Connection
-from .serializers import ConnectionSerializer,ConnectionRequestSerializer,ConnectionWithStudentSerializer,MentorConnectionSerializer,StudentConnectionSerializer
-from auth.authentication import CookieJWTAuthentication
-from drf_spectacular.utils import extend_schema
-from django.shortcuts import get_object_or_404
 from users.models import User
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from chat_app.models import ChatRoom
-from asgiref.sync import sync_to_async 
-from notifications.tasks import send_realtime_notification_task 
 
-
-
+from .serializers import (ConnectionRequestSerializer, ConnectionSerializer,
+                          ConnectionStatusUpdateSerializer,
+                          ConnectionWithStudentSerializer,
+                          MentorConnectionSerializer,
+                          StudentConnectionSerializer)
 
 
 class RequestConnectionView(APIView):
@@ -25,50 +29,28 @@ class RequestConnectionView(APIView):
         responses={201: ConnectionSerializer, 400: dict, 403: dict}
     )
     def post(self, request):
-        try:
-            serializer = ConnectionRequestSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+        serializer = ConnectionRequestSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
 
-            mentor_id = serializer.validated_data.get('mentor_id')
-            student = request.user
+        student = request.user
+        mentor = serializer.validated_data['mentor']
+        
 
-            if student.role != 'student':
-                return Response({'detail': 'Only students can send requests.'}, status=status.HTTP_403_FORBIDDEN)
+        connection = Connection.objects.create(student=student, mentor=mentor)
 
-            if not mentor_id:
-                return Response({'detail': 'Mentor ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        send_realtime_notification_task.delay(
+            recipient_id=mentor.id,
+            sender_id=student.id,
+            notification_type='connection_request_received',
+            message=f"{student.username} has sent you a connection request.",
+            related_object_id=connection.id,
+            related_object_type='Connection'
+        )
 
-            try:
-                mentor = User.objects.get(id=mentor_id)
-            except ObjectDoesNotExist:
-                return Response({'detail': 'Mentor does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-
-            if mentor.role != 'mentor':
-                return Response({'detail': 'The selected user is not a mentor.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            if Connection.objects.filter(student=student, mentor=mentor).exists():
-                return Response({'detail': 'Connection already exists.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            connection = Connection.objects.create(student=student, mentor=mentor)
-
-            send_realtime_notification_task.delay(
-                recipient_id=mentor.id,
-                sender_id=student.id,
-                notification_type='connection_request_received',
-                message=f"{student.username} has sent you a connection request.",
-                related_object_id=connection.id,
-                related_object_type='Connection'
-            )
-
-            return Response(ConnectionSerializer(connection).data, status=status.HTTP_201_CREATED)
-
-        except ValidationError as e:
-            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-        except Exception as e:
-            # Catch any unexpected server errors
-            return Response({'detail': f'Server error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        return Response(ConnectionSerializer(connection).data, status=status.HTTP_201_CREATED)
 
 class PendingRequestsView(generics.ListAPIView):
     serializer_class = ConnectionWithStudentSerializer
@@ -87,31 +69,30 @@ class ManageConnectionStatus(APIView):
         user = request.user
 
         if user.role != 'mentor':
-            return Response({'detail': 'Only mentors can update connection status.'}, status=403)
+            return Response({'detail': 'Only mentors can update connection status.'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
             connection = Connection.objects.get(pk=pk, mentor=user)
         except Connection.DoesNotExist:
-            return Response({'detail': 'Connection not found.'}, status=404)
+            return Response({'detail': 'Connection not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        status_choice = request.data.get('status')
-        if status_choice not in ['accepted', 'rejected']:
-            return Response({'detail': 'Invalid status.'}, status=400)
+        serializer = ConnectionStatusUpdateSerializer(connection, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
 
         old_status = connection.status
-        connection.status = status_choice
-        connection.save()
+        connection = serializer.save()
 
-        if status_choice == 'accepted' and old_status != 'accepted':
+        if connection.status == 'accepted' and old_status != 'accepted':
             send_realtime_notification_task.delay(
                 recipient_id=connection.student.id,
                 sender_id=user.id,
                 notification_type='connection_request_accepted',
-                message=f"{user.username} has accepted your connection request!",
+                message=f"{user.username} has accepted your connection request!.",
                 related_object_id=connection.id,
                 related_object_type='Connection'
             )
-        return Response(ConnectionSerializer(connection).data)
+
+        return Response(ConnectionSerializer(connection).data, status=status.HTTP_200_OK)
 
 
 

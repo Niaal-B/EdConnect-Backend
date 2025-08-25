@@ -1,7 +1,9 @@
-from django.db import models
-from django.conf import settings
 import uuid
+
+from django.conf import settings
+from django.db import models
 from mentors.models import Slot
+
 
 class Booking(models.Model):
     STATUS_CHOICES = [
@@ -62,3 +64,66 @@ class Booking(models.Model):
     def __str__(self):
         return f"Booking {self.id} | {self.student.username} with {self.mentor.username} ({self.status})"
 
+
+
+class BookingCalendarEvent(models.Model):
+    """
+    Stores the Google Calendar Event ID for a specific user and booking.
+    This allows managing calendar events for both mentor and student separately.
+    """
+    booking = models.ForeignKey(
+        'Booking', 
+        on_delete=models.CASCADE,
+        related_name='calendar_events',
+        verbose_name="Related Booking"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="User Owning the Calendar Event"
+    )
+    google_event_id = models.CharField(
+        max_length=255,
+        verbose_name="Google Calendar Event ID",
+        help_text="ID of the event in the user's Google Calendar"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True) 
+
+    class Meta:
+        unique_together = ('booking', 'user')
+        verbose_name = "Booking Calendar Event"
+        verbose_name_plural = "Booking Calendar Events"
+
+    def __str__(self):
+        return f"Event for Booking {self.booking.id} ({self.user.username})"
+
+
+class Feedback(models.Model):
+    booking = models.OneToOneField(
+        Booking, 
+        on_delete=models.CASCADE, 
+        related_name='feedback',
+        help_text="The booking this feedback is for."
+    )
+    rating = models.PositiveSmallIntegerField(
+        help_text="Rating given by the student (1 to 5)."
+    )
+    comment = models.TextField(
+        blank=True,
+        help_text="Optional comments from the student."
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='submitted_feedback',
+        help_text="The user who submitted this feedback."
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Feedback for Booking {self.booking.id} - Rating: {self.rating}"
+
+    class Meta:
+        verbose_name_plural = "Feedback"

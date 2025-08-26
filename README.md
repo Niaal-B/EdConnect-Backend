@@ -122,6 +122,27 @@ npm run dev
 - Redis server running on port 6379
 - Celery worker process for background tasks
 
+
+## 🧪 Development Workflow
+
+### 🐳 Accessing Docker Services
+
+#### Django Container
+```bash
+docker exec -it django_app bash
+Database Container
+bash
+Copy
+Edit
+docker exec -it postgres_db psql -U myuser -d mydb
+💳 Stripe Webhooks
+Run the following command to listen for Stripe events and forward them to your local API:
+
+bash
+Copy
+Edit
+stripe listen --forward-to localhost/api/bookings/stripe-webhook/
+
 ## Usage
 
 ### Getting Started
@@ -155,9 +176,6 @@ Access running services for debugging:
 # Backend application shell
 docker-compose exec backend python manage.py shell
 
-# Database console
-docker-compose exec db psql -U postgres -d edconnect
-
 # View application logs
 docker-compose logs -f backend
 docker-compose logs -f frontend
@@ -166,12 +184,9 @@ docker-compose logs -f frontend
 ## Development Roadmap
 
 ### Short Term
-- Payment integration using Stripe for premium mentorship sessions
 - Enhanced matching algorithm using machine learning
-- Mobile application development
 
 ### Medium Term
-- Video calling functionality for remote mentorship sessions
 - Group mentorship sessions and webinar capabilities
 - Advanced analytics for tracking student progress
 

@@ -158,17 +158,6 @@ Create a feature branch for new development:
 git checkout -b feature/your-feature-name
 ```
 
-Run the test suite before submitting changes:
-```bash
-# Backend tests
-docker-compose exec backend python manage.py test
-
-# Frontend tests
-docker-compose exec frontend npm run test
-```
-
-Follow the existing code style and ensure all tests pass before creating a pull request.
-
 ### Docker Services
 
 Access running services for debugging:

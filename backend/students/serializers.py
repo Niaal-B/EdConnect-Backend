@@ -12,8 +12,6 @@ class StudentLoginSerializer(serializers.Serializer):
 
     def validate(self,attrs):
         user = authenticate(email=attrs['email'],password=attrs['password'])
-        print(attrs['email'],attrs['password'])
-        print(user,"hey this is the user")
         if not user or user.role !='student':
             raise serializers.ValidationError("Invalid Student credentials")
 

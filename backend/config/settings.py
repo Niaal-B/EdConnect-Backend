@@ -85,10 +85,13 @@ ASGI_APPLICATION = 'config.asgi.application'
 
 
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "https://ed-connect-frontend.vercel.app"
-]
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+#     "https://ed-connect-frontend.vercel.app"
+# ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
 CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'config.urls'

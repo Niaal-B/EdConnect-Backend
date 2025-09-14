@@ -5,7 +5,7 @@ from django.core.mail import EmailMultiAlternatives, send_mail
 
 @shared_task
 def send_verification_email(email, token):
-    verification_url = f"http://localhost:3000/verify-email/{token}/"
+    verification_url = f"{settings.FRONTEND_URL}/verify-email/{token}/"
 
     subject = "Verify Your EdConnect Account"
     from_email = settings.DEFAULT_FROM_EMAIL

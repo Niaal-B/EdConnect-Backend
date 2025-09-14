@@ -114,6 +114,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 
+FRONTEND_URL = os.getenv("FRONTEND_URL", default="http://localhost:3000")
 
 DATABASES = {
     'default': {

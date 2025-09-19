@@ -7,12 +7,10 @@ def set_jwt_cookies(response, user):
     cookie_kwargs = {
         'httponly': True,
         'secure': not settings.DEBUG,
-        'samesite': 'Lax',
+        'samesite': 'None' if not settings.DEBUG else 'Lax',
     }
     
-    if settings.DEBUG:
-        cookie_kwargs['domain'] = 'localhost'
-    
+
     response.set_cookie(
         key='refresh_token',
         value=str(refresh),
@@ -26,6 +24,6 @@ def set_jwt_cookies(response, user):
         max_age=60*15,
         **cookie_kwargs
     )
-    print(response,"this is response")    
+    
     response['access_token'] = refresh.access_token
     return response

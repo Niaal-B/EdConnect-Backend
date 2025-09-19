@@ -9,7 +9,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['id', 'chat_room', 'sender', 'sender_id', 'sender_username', 'content', 'timestamp', 'is_read']
+        fields = ['id', 'chat_room', 'sender', 'sender_id', 'sender_username', 'content', 'timestamp', 'is_read','file_type','file']
         read_only_fields = ['id', 'chat_room', 'sender', 'sender_id', 'sender_username', 'timestamp']
 
     def get_sender_username(self, obj):

@@ -47,7 +47,6 @@ class GoogleLoginCallbackView(APIView):
                 return Response({'error': 'Unexpected role specified in Google OAuth flow.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if not desired_role:
-            print("DEBUG: Returning from: Role not specified in Google OAuth flow.")
             return Response({'error': 'Role not specified in Google OAuth flow.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
@@ -58,11 +57,11 @@ class GoogleLoginCallbackView(APIView):
                         "client_secret": settings.SOCIALACCOUNT_PROVIDERS['google']['APP']['secret'],
                         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                         "token_uri": "https://oauth2.googleapis.com/token",
-                        "redirect_uris": ["http://localhost/api/auth/google/callback/"]
+                        "redirect_uris": [os.getenv("GOOGLE_REDIRECT_URI")],
                     }
                 },
                 scopes=settings.SOCIALACCOUNT_PROVIDERS['google']['SCOPE'],
-                redirect_uri="http://localhost/api/auth/google/callback/"
+                redirect_uri=os.getenv("GOOGLE_REDIRECT_URI"),
             )
 
             token_response = flow.fetch_token(code=code)

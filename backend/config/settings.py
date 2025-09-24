@@ -186,6 +186,9 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+
+
 
 
 # Internationalization

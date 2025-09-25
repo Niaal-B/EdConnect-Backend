@@ -236,11 +236,11 @@ AUTH_USER_MODEL = 'users.User'
 
 
 SIMPLE_JWT = {
-    'AUTH_COOKIE': 'access_token',       # Cookie name
-    'AUTH_COOKIE_SECURE': False,         # True in production (HTTPS only)
-    'AUTH_COOKIE_HTTP_ONLY': True,       # Not accessible via JavaScript
-    'AUTH_COOKIE_SAMESITE': 'Lax',       # Prevents CSRF
-    'AUTH_COOKIE_PATH': '/',             # Available on all paths
+    'AUTH_COOKIE': 'access_token',      
+    'AUTH_COOKIE_SECURE': False,        
+    'AUTH_COOKIE_HTTP_ONLY': True,      
+    'AUTH_COOKIE_SAMESITE': 'Lax',       
+    'AUTH_COOKIE_PATH': '/',             
     'AUTH_COOKIE_DOMAIN': None,  
     'AUTH_COOKIE_REFRESH': 'refresh_token',  
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),

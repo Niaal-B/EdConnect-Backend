@@ -1,5 +1,5 @@
 import logging
-
+import os
 import stripe
 from auth.authentication import CookieJWTAuthentication
 from bookings.models import Booking,Feedback
@@ -24,10 +24,13 @@ from notifications.tasks import send_realtime_notification_task
 from rest_framework.exceptions import NotFound, PermissionDenied,ValidationError
 
 
+
+
 logger = logging.getLogger(__name__)
 
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
 
 class BookingCreateAPIView(generics.CreateAPIView):
     serializer_class = BookingSerializer
@@ -98,9 +101,9 @@ class BookingCreateAPIView(generics.CreateAPIView):
                         },
                     ],
                     mode='payment', 
-                    success_url=f'http://localhost:3000/booking/success?session_id={{CHECKOUT_SESSION_ID}}',
-                    cancel_url='http://localhost:3000/booking/cancel',
-
+                    success_url=os.getenv("SUCCESS_URL"),
+                    cancel_url=os.getenv("CANCEL_URL"),
+                    
                     payment_intent_data={
                         'application_fee_amount': platform_fee_cents,
                         'transfer_data': {

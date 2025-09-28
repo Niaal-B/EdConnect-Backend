@@ -14,6 +14,7 @@ class Notification(models.Model):
         ("mentor_approved", "Mentor Approved"),
         ("mentor_rejected", "Mentor Rejected"),
         ("booking_cancelled", "Booking Cancelled"),
+        ("message_received", "Message Received")
 
     ]
     notification_type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)

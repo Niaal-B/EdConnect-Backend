@@ -19,7 +19,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import User
-from .zegoserverassistant import generate_token04
+from .zego_token_generator import generate_token04
 from notifications.tasks import send_realtime_notification_task
 from rest_framework.exceptions import NotFound, PermissionDenied,ValidationError
 
@@ -487,3 +487,4 @@ class FeedbackCreateView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
         raise ValidationError(serializer.errors)
+

@@ -76,19 +76,27 @@ class VerifyEmailView(generics.GenericAPIView):
 
 class LogoutView(APIView):
     def post(self, request):
-        refresh_token = request.COOKIES.get('refresh_token')
+        refresh_token = request.COOKIES.get("refresh_token")
 
         if refresh_token:
             try:
                 token = RefreshToken(refresh_token)
                 token.blacklist()
             except TokenError:
-                pass  
+                pass
 
-  
-        response = Response({"message": "Logged out successfully."}, status=status.HTTP_200_OK)
+        response = Response(
+            {"message": "Logged out successfully."},
+            status=status.HTTP_200_OK
+        )
 
-        response.delete_cookie('access_token')
-        response.delete_cookie('refresh_token')
+        cookie_kwargs = {
+            "path": "/",
+            "domain": None,  
+            "samesite": "None" if not settings.DEBUG else "Lax",
+        }
+
+        response.delete_cookie("access_token", **cookie_kwargs)
+        response.delete_cookie("refresh_token", **cookie_kwargs)
 
         return response

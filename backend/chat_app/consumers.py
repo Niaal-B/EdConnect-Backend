@@ -7,6 +7,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from chat_app.models import ChatRoom, Message
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
+from notifications.tasks import send_realtime_notification_task
+
 
 User = get_user_model() 
 logger = logging.getLogger(__name__)
@@ -116,6 +118,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': 'Failed to save message. Please try again.'
             }))
             return
+
+        recipient = (
+            self.chat_room_obj.mentor 
+            if sender == self.chat_room_obj.student 
+            else self.chat_room_obj.student
+        )
+        
+        await sync_to_async(send_realtime_notification_task.delay)(
+        recipient_id=recipient.id,
+        sender_id=sender.id,
+        notification_type='message_received',
+        message=f"{sender.username} sent you a message.",
+        related_object_id=self.chat_room_obj.id,
+        related_object_type='ChatRoom'
+    )
 
         response = {
             'type': 'chat_message', 

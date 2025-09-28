@@ -124,7 +124,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if sender == self.chat_room_obj.student 
             else self.chat_room_obj.student
         )
-        
+
         await sync_to_async(send_realtime_notification_task.delay)(
         recipient_id=recipient.id,
         sender_id=sender.id,
@@ -136,7 +136,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         response = {
             'type': 'chat_message', 
-            'message': new_message.content, # Use the content from the saved object
+            'message': new_message.content, 
             'sender_id': sender.id,
             'sender_username': sender.username,
             'timestamp': new_message.timestamp.isoformat(),

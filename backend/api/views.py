@@ -134,11 +134,12 @@ class GoogleLoginCallbackView(APIView):
 
         try:
             if user.role == 'student':
-                frontend_redirect_url = "http://localhost:3000/student/dashboard"
+                frontend_redirect_url = f"{settings.FRONTEND_URL}/student/dashboard"
             elif user.role == 'mentor':
-                frontend_redirect_url = "http://localhost:3000/mentor/dashboard"
+                frontend_redirect_url = f"{settings.FRONTEND_URL}/mentor/dashboard"
             else:
-                frontend_redirect_url = "http://localhost:3000/dashboard"
+                frontend_redirect_url = f"{settings.FRONTEND_URL}/dashboard"
+
 
             response = redirect(frontend_redirect_url)
 

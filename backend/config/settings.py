@@ -234,14 +234,15 @@ REST_FRAMEWORK = {
 
 AUTH_USER_MODEL = 'users.User'
 
+
 SIMPLE_JWT = {
-    'AUTH_COOKIE': 'access_token',
-    'AUTH_COOKIE_SECURE': True,       # use True in production HTTPS
-    'AUTH_COOKIE_HTTP_ONLY': True,
-    'AUTH_COOKIE_SAMESITE': 'None',   # must be None for cross-origin
-    'AUTH_COOKIE_PATH': '/',
-    'AUTH_COOKIE_DOMAIN': 'chronocrust.shop',  # set domain if cross-origin
-    'AUTH_COOKIE_REFRESH': 'refresh_token',
+    'AUTH_COOKIE': 'access_token',            # access token cookie name
+    'AUTH_COOKIE_SECURE': True,               # must be True for HTTPS
+    'AUTH_COOKIE_HTTP_ONLY': True,            # JS cannot access
+    'AUTH_COOKIE_SAMESITE': 'None',           # allow cross-site requests
+    'AUTH_COOKIE_PATH': '/',                   # cookie path
+    'AUTH_COOKIE_DOMAIN': None,               # let browser handle domain automatically
+    'AUTH_COOKIE_REFRESH': 'refresh_token',   # refresh token cookie name
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,

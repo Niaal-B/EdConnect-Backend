@@ -94,13 +94,15 @@ class CheckSessionView(GenericAPIView):
             )
 
 
-class CookieTokenRefreshView(GenericAPIView):
+class CookieTokenRefreshView(APIView):
     """
-    Custom token refresh view that works with httpOnly cookies
+    Refresh JWT using httpOnly cookies.
     """
     def post(self, request):
-        refresh_token = request.COOKIES.get(settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token'))
-        
+        refresh_token = request.COOKIES.get(
+            settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token')
+        )
+
         if not refresh_token:
             logger.error("No refresh token in cookies")
             return Response(
@@ -111,13 +113,13 @@ class CookieTokenRefreshView(GenericAPIView):
         try:
             refresh = RefreshToken(refresh_token)
             new_access_token = str(refresh.access_token)
-            
+
             logger.debug("Successfully generated new access token")
-            
+
             response = Response({
                 'message': 'Token refreshed successfully'
             })
-            
+
             # Set new access token cookie
             response.set_cookie(
                 key=settings.SIMPLE_JWT['AUTH_COOKIE'],
@@ -129,9 +131,9 @@ class CookieTokenRefreshView(GenericAPIView):
                 path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/'),
                 domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN', None),
             )
-                        
+
             return response
-            
+
         except TokenError as e:
             logger.error(f"Token refresh failed: {str(e)}")
             return Response(
@@ -144,7 +146,6 @@ class CookieTokenRefreshView(GenericAPIView):
                 {'error': 'Token refresh failed', 'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
 
 
 

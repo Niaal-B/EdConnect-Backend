@@ -23,6 +23,8 @@ from users.tasks import send_reset_password_email
 from users.utils import set_jwt_cookies
 
 from .authentication import CookieJWTAuthentication
+import os
+
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +159,8 @@ class ForgotPasswordView(GenericAPIView):
             user = User.objects.get(email=email)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
-            reset_link = f"http://localhost:3000/reset-password/{uid}/{token}"
+            frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+            reset_link = f"{frontend_url}/reset-password/{uid}/{token}"
             send_reset_password_email.delay(email, reset_link)
         except User.DoesNotExist:
             pass  

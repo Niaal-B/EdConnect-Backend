@@ -125,10 +125,11 @@ class CookieTokenRefreshView(GenericAPIView):
                 httponly=True,
                 secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
                 samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-                max_age=settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds(),
-                path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/')
+                max_age=int(settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()),
+                path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/'),
+                domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN', None),
             )
-            
+                        
             return response
             
         except TokenError as e:

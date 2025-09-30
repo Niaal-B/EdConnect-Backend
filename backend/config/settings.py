@@ -234,20 +234,20 @@ REST_FRAMEWORK = {
 
 AUTH_USER_MODEL = 'users.User'
 
-
 SIMPLE_JWT = {
-    'AUTH_COOKIE': 'access_token',      
-    'AUTH_COOKIE_SECURE': False,        
-    'AUTH_COOKIE_HTTP_ONLY': True,      
-    'AUTH_COOKIE_SAMESITE': 'Lax',       
-    'AUTH_COOKIE_PATH': '/',             
-    'AUTH_COOKIE_DOMAIN': None,  
-    'AUTH_COOKIE_REFRESH': 'refresh_token',  
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'AUTH_COOKIE': 'access_token',
+    'AUTH_COOKIE_SECURE': True,       # use True in production HTTPS
+    'AUTH_COOKIE_HTTP_ONLY': True,
+    'AUTH_COOKIE_SAMESITE': 'None',   # must be None for cross-origin
+    'AUTH_COOKIE_PATH': '/',
+    'AUTH_COOKIE_DOMAIN': 'chronocrust.shop',  # set domain if cross-origin
+    'AUTH_COOKIE_REFRESH': 'refresh_token',
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,  
-    'BLACKLIST_AFTER_ROTATION': True,  
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
+
 
 CELERY_BROKER_URL = "redis://redis_server:6379/0"  
 CELERY_RESULT_BACKEND = "redis://redis_server:6379/0"

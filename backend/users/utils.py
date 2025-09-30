@@ -21,7 +21,7 @@ def set_jwt_cookies(response, user):
     response.set_cookie(
         key='access_token',
         value=str(refresh.access_token),
-        max_age=60*15,
+        max_age=60*1,
         **cookie_kwargs
     )
     

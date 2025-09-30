@@ -49,7 +49,6 @@ class BookingCreateAPIView(generics.CreateAPIView):
 
                 mentor = slot.mentor
                 stripe_account_id = MentorDetails.objects.get(user=mentor).stripe_account_id
-                print(stripe_account_id)
                 if not stripe_account_id:
                     return Response({"detail": "Mentor's Stripe account is not connected. They cannot receive payments."},
                                     status=status.HTTP_400_BAD_REQUEST)
@@ -426,7 +425,6 @@ class GenerateZegoTokenView(APIView):
             app_id = settings.ZEGO_APP_ID
             server_secret = settings.ZEGO_SERVER_SECRET
             effective_time_in_seconds = 3600
-            print(type(app_id))
  
             token_info = generate_token04(
                 int(app_id), 

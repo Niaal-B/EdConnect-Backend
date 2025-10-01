@@ -38,8 +38,9 @@ class ConnectionRequestSerializer(serializers.Serializer):
         if mentor.role != 'mentor':
             raise ValidationError({"mentor_id": "The selected user is not a mentor."})
 
-        if Connection.objects.filter(student=student, mentor=mentor).exists():
-            raise ValidationError("Connection with this mentor already exists.")
+        if Connection.objects.filter(student=student, mentor=mentor, status="accepted").exists():
+            raise ValidationError("You are already connected with this mentor.")
+
 
         try:
             mentor_details = MentorDetails.objects.get(user=mentor)

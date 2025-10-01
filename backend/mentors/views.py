@@ -360,7 +360,6 @@ class MentorStripeOnboardingView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         except Exception as e:
-            print(e)
             return Response(
                 {"detail": "An unexpected error occurred during Stripe onboarding initiation."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -394,13 +393,11 @@ class MentorStripeOnboardingView(APIView):
                 "detail": "Stripe account linked."
             })
         except stripe.error.StripeError as e:
-            print(f"Stripe Error retrieving account: {e}")
             return Response(
                 {"detail": f"Stripe error: {e.user_message}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         except Exception as e:
-            print(f"Server Error: {e}")
             return Response(
                 {"detail": "An unexpected error occurred retrieving Stripe account status."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -562,7 +559,6 @@ class UpcomingSessionsView(APIView):
             mentor=mentor,
             status="CONFIRMED",
         )[:5]
-        print(upcoming_sessions)
 
         serializer = UpcomingBookingSerializer(upcoming_sessions, many=True)
         return Response(serializer.data)

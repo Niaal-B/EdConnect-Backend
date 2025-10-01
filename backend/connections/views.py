@@ -37,9 +37,19 @@ class RequestConnectionView(APIView):
 
         student = request.user
         mentor = serializer.validated_data['mentor']
-        
 
-        connection = Connection.objects.create(student=student, mentor=mentor)
+        connection, created = Connection.objects.get_or_create(
+            student=student,
+            mentor=mentor,
+            defaults={"status": "pending"}
+        )
+
+        if not created:
+            if connection.status == "accepted":
+                raise ValidationError("You are already connected with this mentor.")
+            else:
+                connection.status = "pending"
+                connection.save(update_fields=["status", "updated_at"])
 
         send_realtime_notification_task.delay(
             recipient_id=mentor.id,
@@ -51,7 +61,6 @@ class RequestConnectionView(APIView):
         )
 
         return Response(ConnectionSerializer(connection).data, status=status.HTTP_201_CREATED)
-
 class PendingRequestsView(generics.ListAPIView):
     serializer_class = ConnectionWithStudentSerializer
     authentication_classes = [CookieJWTAuthentication]

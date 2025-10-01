@@ -38,22 +38,16 @@ class ConnectionRequestSerializer(serializers.Serializer):
         if mentor.role != 'mentor':
             raise ValidationError({"mentor_id": "The selected user is not a mentor."})
 
-        if Connection.objects.filter(student=student, mentor=mentor, status="accepted").exists():
-            raise ValidationError("You are already connected with this mentor.")
-
-
         try:
             mentor_details = MentorDetails.objects.get(user=mentor)
         except MentorDetails.DoesNotExist:
             raise ValidationError({"mentor_id": "Mentor profile does not exist."})
 
-
         if not mentor_details.countries or len(mentor_details.countries) == 0:
             raise ValidationError({"mentor_id": "Mentor has not set their country."})
-            
+
         attrs['mentor'] = mentor
         return attrs
-
 
 
 class ConnectionStatusUpdateSerializer(serializers.ModelSerializer):

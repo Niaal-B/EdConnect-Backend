@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from admin.serializers import (AdminLoginSerializer, MentorApprovalSerializer,
-                               MentorVerificationSerializer,BookingSerializer)
+                               MentorVerificationSerializer,BookingSerializer,AdminMentorFeedbackSerializer)
 from auth.authentication import CookieJWTAuthentication
 from django.contrib.auth import get_user_model
 from django.db.models import Count
@@ -19,9 +19,12 @@ from users.utils import set_jwt_cookies
 
 User = get_user_model()
 
-from bookings.models import Booking
+from bookings.models import Booking,Feedback
 from mentors.models import MentorDetails
 from notifications.tasks import send_realtime_notification_task
+
+
+
 
 # Create your views here.
 
@@ -302,3 +305,22 @@ class AdminBookingsView(APIView):
         serializer = BookingSerializer(all_bookings, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
    
+
+class AdminMentorFeedbackList(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+
+        queryset = Feedback.objects.select_related(
+            'booking', 
+            'booking__mentor', 
+            'submitted_by',    
+        ).all().order_by('-submitted_at')
+
+        serializer = AdminMentorFeedbackSerializer(queryset, many=True)
+
+        return Response({
+            'count': queryset.count(),
+            'results': serializer.data
+        }, status=status.HTTP_200_OK)

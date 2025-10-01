@@ -2,7 +2,7 @@ from admin.views import (AdminDashboardStatsView, AdminLoginView,
                          ApproveRejectMentorView, MentorVerificationDetailView,
                          PendingMentorVerificationsView,
                          UpdateVerificationStatusView, UserListView,
-                         UserStatusUpdateView, VerifiedMentorsView,RejectedMentorsView,AdminBookingsView)
+                         UserStatusUpdateView, VerifiedMentorsView,RejectedMentorsView,AdminBookingsView,AdminMentorFeedbackList)
 from django.urls import path
 
 urlpatterns = [
@@ -17,6 +17,7 @@ urlpatterns = [
     path('mentors/<int:mentor_id>/status/', UpdateVerificationStatusView.as_view(), name='update-mentor-status'),
     path('dashboard/stats/', AdminDashboardStatsView.as_view(), name='admin-dashboard-stats'),
     path('bookings/', AdminBookingsView.as_view(), name='admin-bookings'), 
+    path('feedback/mentors/', AdminMentorFeedbackList.as_view(), name='admin-mentor-feedback-list'),
 
 
 ]

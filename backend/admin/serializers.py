@@ -4,7 +4,7 @@ from rest_framework import serializers
 from students.models import StudentDetails
 from mentors.models import MentorDetails,Slot
 from django.contrib.auth import get_user_model
-from bookings.models import Booking
+from bookings.models import Booking,Feedback
 
 User = get_user_model()
 
@@ -117,4 +117,36 @@ class BookingSerializer(serializers.ModelSerializer):
         profile = getattr(obj.mentor, 'mentor_profile', None)
         if profile:
             return MentorDetailsSerializer(profile).data
+        return None
+
+
+class AdminMentorFeedbackSerializer(serializers.ModelSerializer):
+    booking_id = serializers.UUIDField(source='booking.id', read_only=True)
+    booked_start_time = serializers.DateTimeField(source='booking.booked_start_time', read_only=True)
+    booked_end_time = serializers.DateTimeField(source='booking.booked_end_time', read_only=True)
+    
+    mentor_details = serializers.SerializerMethodField()
+    student_details = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Feedback
+        fields = [
+            'id', 'booking_id', 'rating', 'comment', 'submitted_at',
+            'booked_start_time', 'booked_end_time', 
+            'mentor_details', 'student_details',
+        ]
+        read_only_fields = fields
+
+    def get_mentor_details(self, obj):
+        profile = getattr(obj.booking.mentor, 'mentor_profile', None)
+        if profile:
+            from .serializers import MentorDetailsSerializer 
+            return MentorDetailsSerializer(profile).data
+        return None
+    
+    def get_student_details(self, obj):
+        profile = getattr(obj.submitted_by, 'student_profile', None)
+        if profile:
+            from .serializers import StudentDetailsSerializer
+            return StudentDetailsSerializer(profile).data
         return None

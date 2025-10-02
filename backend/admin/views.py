@@ -32,7 +32,6 @@ class AdminLoginView(generics.GenericAPIView):
     serializer_class = AdminLoginSerializer
 
     def post(self,request):
-        print("Hey i reached here")
         serializer = AdminLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data

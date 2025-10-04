@@ -1,10 +1,9 @@
-from django.contrib.auth import authenticate
-from mentors.models import MentorDetails, VerificationDocument
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
+
+from bookings.models import Booking, Feedback
+from mentors.models import MentorDetails, Slot, VerificationDocument
 from students.models import StudentDetails
-from mentors.models import MentorDetails,Slot
-from django.contrib.auth import get_user_model
-from bookings.models import Booking,Feedback
 
 User = get_user_model()
 

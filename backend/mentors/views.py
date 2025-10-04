@@ -2,8 +2,6 @@ import datetime
 
 import pytz
 import stripe
-from auth.authentication import CookieJWTAuthentication
-from bookings.models import Booking
 from django.conf import settings
 from django.db import models
 from django.db.models import Count, Q, Sum
@@ -15,7 +13,6 @@ from drf_spectacular.utils import (OpenApiExample, OpenApiParameter,
                                    OpenApiTypes, extend_schema)
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from mentors.models import MentorDetails, Slot
 from rest_framework import permissions, status
 from rest_framework.generics import (GenericAPIView, ListAPIView,
                                      ListCreateAPIView, RetrieveUpdateAPIView,
@@ -24,16 +21,20 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from auth.authentication import CookieJWTAuthentication
+from bookings.models import Booking, Feedback
+from bookings.serializers import FeedbackSerializer
+from connections.models import Connection
+from mentors.models import MentorDetails, Slot
 from users.utils import set_jwt_cookies
 
 from .serializers import (MentorLoginSerializer, MentorProfileSerializer,
                           MentorProfileUpdateSerializer,
                           ProfilePictureSerializer, PublicMentorSerializer,
-                          SlotSerializer, VerificationDocumentSerializer,UpcomingBookingSerializer)
+                          SlotSerializer, UpcomingBookingSerializer,
+                          VerificationDocumentSerializer)
 
-from connections.models import Connection
-from bookings.models import Booking,Feedback
-from bookings.serializers import FeedbackSerializer
 
 class MentorLoginView(GenericAPIView):
     serializer_class = MentorLoginSerializer

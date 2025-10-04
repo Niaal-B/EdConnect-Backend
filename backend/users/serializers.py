@@ -1,10 +1,10 @@
 from django.contrib.auth.password_validation import validate_password
-from mentors.serializers import MentorProfileSerializer
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
+
+from mentors.serializers import MentorProfileSerializer
 from users.models import User
 from users.redis_utils import get_and_delete_unverified_user
-from django.contrib.auth.password_validation import validate_password
 
 
 class UserRegistrationSerializer(serializers.Serializer):

@@ -1,10 +1,11 @@
 from django.urls import path
-from mentors.views import (DocumentUploadView, MentorEarningsAPIView,
+
+from mentors.views import (DocumentUploadView, MentorDashboardStatsView,
+                           MentorEarningsAPIView, MentorFeedbackView,
                            MentorLoginView, MentorProfileView,
                            MentorSlotCancelView, MentorSlotListCreateView,
                            MentorStripeOnboardingView, ProfilePictureView,
-                           PublicMentorListView,MentorDashboardStatsView,
-                           UpcomingSessionsView,MentorFeedbackView)
+                           PublicMentorListView, UpcomingSessionsView)
 
 urlpatterns = [
     path('login/',MentorLoginView.as_view(),name='mentor-login'),

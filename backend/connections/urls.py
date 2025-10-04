@@ -1,8 +1,9 @@
+from django.urls import path
+
 from connections.views import (CancelConnectionView, ListConnectionsView,
                                ManageConnectionStatus, MyMentorsView,
                                MyStudentsView, PendingRequestsView,
                                RequestConnectionView)
-from django.urls import path
 
 urlpatterns = [
 

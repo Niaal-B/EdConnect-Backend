@@ -1,20 +1,21 @@
-from auth.authentication import CookieJWTAuthentication
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from auth.authentication import CookieJWTAuthentication
+from bookings.models import Booking
+from connections.models import Connection
 from students.models import StudentDetails
 from students.serializers import (StudentDetailsSerializer,
                                   StudentLoginSerializer)
 from users.serializers import UserSerializer
 from users.utils import set_jwt_cookies
-from connections.models import Connection
-from rest_framework.views import APIView
-from bookings.models import Booking
-from django.utils import timezone
 
 
 class StudentLoginView(GenericAPIView):

@@ -1,30 +1,30 @@
 from datetime import timedelta
 
-from admin.serializers import (AdminLoginSerializer, MentorApprovalSerializer,
-                               MentorVerificationSerializer,BookingSerializer,AdminMentorFeedbackSerializer)
-from auth.authentication import CookieJWTAuthentication
 from django.contrib.auth import get_user_model
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
-from mentors.models import MentorDetails
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, generics
+
+from admin.serializers import (AdminLoginSerializer,
+                               AdminMentorFeedbackSerializer,
+                               BookingSerializer, MentorApprovalSerializer,
+                               MentorVerificationSerializer)
+from auth.authentication import CookieJWTAuthentication
+from mentors.models import MentorDetails
 from users.models import User
 from users.serializers import UserSerializer
 from users.utils import set_jwt_cookies
 
 User = get_user_model()
 
-from bookings.models import Booking,Feedback
+from bookings.models import Booking, Feedback
 from mentors.models import MentorDetails
 from notifications.tasks import send_realtime_notification_task
-
-
-
 
 # Create your views here.
 

@@ -1,6 +1,7 @@
-from chat_app.models import ChatRoom
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+
+from chat_app.models import ChatRoom
 
 from .models import Connection
 

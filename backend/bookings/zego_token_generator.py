@@ -1,10 +1,11 @@
 #!/usr/bin/env python -u
 # coding:utf-8
+import binascii
 import json
 import random
-import time
 import struct
-import binascii
+import time
+
 from Crypto.Cipher import AES
 
 ERROR_CODE_SUCCESS = 0                              # Successfully obtained authentication token

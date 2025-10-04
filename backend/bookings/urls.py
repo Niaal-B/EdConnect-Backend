@@ -1,8 +1,10 @@
 from django.urls import path
 
 from .views import (BookingCancelAPIView, BookingCreateAPIView,
-                    BookingStatusAPIView, MentorBookingsAPIView,
-                    StudentBookingsAPIView, stripe_webhook,GenerateZegoTokenView,CompleteBookingView,FeedbackCreateView)
+                    BookingStatusAPIView, CompleteBookingView,
+                    FeedbackCreateView, GenerateZegoTokenView,
+                    MentorBookingsAPIView, StudentBookingsAPIView,
+                    stripe_webhook)
 
 urlpatterns = [
 

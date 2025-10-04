@@ -1,5 +1,6 @@
-from chat_app.models import ChatRoom, Message
 from rest_framework import serializers
+
+from chat_app.models import ChatRoom, Message
 from users.models import User
 
 

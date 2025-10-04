@@ -4,11 +4,11 @@ import logging
 
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
-from chat_app.models import ChatRoom, Message
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
-from notifications.tasks import send_realtime_notification_task
 
+from chat_app.models import ChatRoom, Message
+from notifications.tasks import send_realtime_notification_task
 
 User = get_user_model() 
 logger = logging.getLogger(__name__)

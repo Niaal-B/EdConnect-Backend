@@ -1,30 +1,31 @@
 import logging
 import os
+
 import stripe
-from auth.authentication import CookieJWTAuthentication
-from bookings.models import Booking,Feedback
-from bookings.serializers import BookingSerializer, MentorBookingsSerializer,FeedbackSerializer
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q,Case,When,Value,IntegerField
+from django.db.models import Case, IntegerField, Q, Value, When
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from mentors.models import MentorDetails, Slot
-from notifications.tasks import send_realtime_notification_task
 from rest_framework import generics, status
+from rest_framework.exceptions import (NotFound, PermissionDenied,
+                                       ValidationError)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from users.models import User
-from .zego_token_generator import generate_token04
+
+from auth.authentication import CookieJWTAuthentication
+from bookings.models import Booking, Feedback
+from bookings.serializers import (BookingSerializer, FeedbackSerializer,
+                                  MentorBookingsSerializer)
+from mentors.models import MentorDetails, Slot
 from notifications.tasks import send_realtime_notification_task
-from rest_framework.exceptions import NotFound, PermissionDenied,ValidationError
+from users.models import User
 
-
-
+from .zego_token_generator import generate_token04
 
 logger = logging.getLogger(__name__)
 

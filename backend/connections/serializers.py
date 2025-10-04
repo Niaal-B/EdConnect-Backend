@@ -1,10 +1,11 @@
-from chat_app.models import ChatRoom
-from connections.models import Connection
 from django.core.exceptions import ObjectDoesNotExist
-from mentors.models import MentorDetails
-from mentors.serializers import SlotReadOnlySerializer, SlotSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+
+from chat_app.models import ChatRoom
+from connections.models import Connection
+from mentors.models import MentorDetails
+from mentors.serializers import SlotReadOnlySerializer, SlotSerializer
 from students.models import StudentDetails
 from users.models import User
 

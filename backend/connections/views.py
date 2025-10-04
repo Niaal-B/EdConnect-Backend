@@ -1,16 +1,17 @@
 from asgiref.sync import sync_to_async
-from auth.authentication import CookieJWTAuthentication
-from chat_app.models import ChatRoom
-from connections.models import Connection
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
-from notifications.tasks import send_realtime_notification_task
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import (NotFound, PermissionDenied,
                                        ValidationError)
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from auth.authentication import CookieJWTAuthentication
+from chat_app.models import ChatRoom
+from connections.models import Connection
+from notifications.tasks import send_realtime_notification_task
 from users.models import User
 
 from .serializers import (ConnectionRequestSerializer, ConnectionSerializer,

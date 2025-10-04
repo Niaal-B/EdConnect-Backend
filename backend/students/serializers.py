@@ -1,10 +1,12 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+
+from bookings.models import Booking
+from mentors.models import MentorDetails
 from students.models import StudentDetails
 from users.serializers import UserSerializer
-from mentors.models import MentorDetails
-from bookings.models import Booking
+
 
 class StudentLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()

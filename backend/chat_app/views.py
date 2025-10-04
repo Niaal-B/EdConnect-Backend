@@ -1,11 +1,12 @@
-from auth.authentication import CookieJWTAuthentication
-from chat_app.models import ChatRoom, Message
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema  # <<< ADD THIS IMPORT
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+
+from auth.authentication import CookieJWTAuthentication
+from chat_app.models import ChatRoom, Message
 
 from .serializers import MessageSerializer
 

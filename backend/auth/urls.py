@@ -1,6 +1,7 @@
+from django.urls import path
+
 from auth.views import (CheckSessionView, CookieTokenRefreshView,
                         ForgotPasswordView, ResetPasswordView, VerifyAuthView)
-from django.urls import path
 
 urlpatterns = [
     path('verify',VerifyAuthView.as_view(),name='verify-auth'),

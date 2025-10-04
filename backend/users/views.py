@@ -1,11 +1,12 @@
 import json
 
 from django.conf import settings
-from mentors.models import MentorDetails
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+
+from mentors.models import MentorDetails
 from students.models import StudentDetails
 from users.models import User
 from users.redis_utils import redis_client, store_unverified_user

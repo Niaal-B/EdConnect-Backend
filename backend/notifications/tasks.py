@@ -1,5 +1,6 @@
 # backend/notifications/tasks.py
 import asyncio
+import logging
 
 from asgiref.sync import sync_to_async
 from celery import shared_task
@@ -8,8 +9,6 @@ from django.contrib.auth import get_user_model
 
 from .models import Notification
 from .serializers import NotificationSerializer
-
-import logging
 
 User = get_user_model()
 

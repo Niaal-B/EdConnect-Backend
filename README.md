@@ -180,7 +180,6 @@ docker-compose logs -f frontend
 - Advanced analytics for tracking student progress
 
 ### Long Term
-- AI-powered chatbot for initial student guidance
 - Integration with university databases for automatic verification
 - Multi-language support for global accessibility
 

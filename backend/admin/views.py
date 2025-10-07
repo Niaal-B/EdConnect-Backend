@@ -62,6 +62,10 @@ class UserListView(generics.GenericAPIView):
 
 
 class UserStatusUpdateView(generics.GenericAPIView):
+    """
+    Toggles the active status of a user by user ID.
+    Accessible only to admin users with valid JWT cookies.
+    """
     authentication_classes = [CookieJWTAuthentication] 
     permission_classes = [IsAdminUser]
 

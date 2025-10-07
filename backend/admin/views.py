@@ -114,6 +114,10 @@ class MentorVerificationDetailView(generics.RetrieveAPIView):
 
 
 class PendingMentorVerificationsView(generics.ListAPIView):
+    """ 
+    List all mentors with pending verification.
+    Admin-only access. Returns count and serialized mentor details.
+    """
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminUser]
     serializer_class = MentorVerificationSerializer

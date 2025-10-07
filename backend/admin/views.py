@@ -48,14 +48,17 @@ class AdminLoginView(generics.GenericAPIView):
 
 
 class UserListView(generics.GenericAPIView):
-  authentication_classes = [CookieJWTAuthentication] 
-  permission_classes = [IsAdminUser]
+    """
+    Returns a list of all non-superuser accounts.
+    Accessible only to admin users with valid JWT cookies.
+    """
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAdminUser]
 
-  def get(self,request,*args,**kwargs):
-    users = User.objects.exclude(is_superuser=True)
-    serialized_data = UserSerializer(users,many=True)
-
-    return Response({"users":serialized_data.data},status=status.HTTP_200_OK)
+    def get(self, request, *args, **kwargs):
+        users = User.objects.exclude(is_superuser=True)
+        serialized_data = UserSerializer(users, many=True)
+        return Response({"users": serialized_data.data}, status=status.HTTP_200_OK)
 
 
 class UserStatusUpdateView(generics.GenericAPIView):

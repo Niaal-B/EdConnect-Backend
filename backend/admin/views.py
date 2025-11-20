@@ -139,6 +139,9 @@ class PendingMentorVerificationsView(generics.ListAPIView):
 
 
 class ApproveRejectMentorView(generics.GenericAPIView):
+    """
+    Admin-only endpoint to approve or reject a mentor application.
+    """
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminUser]
     serializer_class = MentorApprovalSerializer

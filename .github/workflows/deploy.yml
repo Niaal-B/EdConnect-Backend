@@ -2,7 +2,7 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: 
+    branches:
       - main
 
 jobs:
@@ -20,10 +20,11 @@ jobs:
           chmod 600 ~/.ssh/deploy_key.pem
 
       - name: Deploy to EC2
+        shell: bash
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/ubuntu/EdConnect
-            sudo git pull
-            sudo docker compose down
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key.pem ubuntu@${{ secrets.EC2_HOST }} "
+            cd /home/ubuntu/EdConnect &&
+            sudo git pull &&
+            sudo docker compose down &&
             sudo docker compose up -d --build
-          EOF
+          "

@@ -49,7 +49,7 @@ Students gain access to first-hand insights about university life, application p
 - **Build System**: Vite 4+
 - **Styling**: Tailwind CSS 3.3+
 - **Components**: ShadCN UI
-- **State Management**: React Query
+- **State Management**: Redux
 
 ### Deployment & Operations
 - **Containerization**: Docker and Docker Compose

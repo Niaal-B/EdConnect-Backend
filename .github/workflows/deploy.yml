@@ -21,9 +21,9 @@ jobs:
 
       - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-cd /home/ubuntu/EdConnect
-sudo git pull
-sudo docker compose down
-sudo docker compose up -d --build
-EOF
+          ssh -tt -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key.pem ubuntu@${{ secrets.EC2_HOST }} "
+            cd /home/ubuntu/EdConnect;
+            sudo git pull;
+            sudo docker compose down;
+            sudo docker compose up -d --build;
+          "

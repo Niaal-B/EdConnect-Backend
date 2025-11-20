@@ -53,7 +53,7 @@ Students gain access to first-hand insights about university life, application p
 
 ### Deployment & Operations
 - **Containerization**: Docker and Docker Compose
-- **Web Server**: Nginx (reverse proxy)
+- **Web Server**: Nginx 
 - **WSGI Server**: Gunicorn
 - **Runtime**: Python 3.11+, Node.js 18+
 

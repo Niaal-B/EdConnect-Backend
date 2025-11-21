@@ -4,10 +4,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 def set_jwt_cookies(response, user):
     refresh = RefreshToken.for_user(user)
+    
+    is_production = not settings.DEBUG
+    
     cookie_kwargs = {
         'httponly': True,
-        'secure': not settings.DEBUG,
-        'samesite': 'None' if not settings.DEBUG else 'Lax',
+        'secure': is_production,  
+        'samesite': 'None' if is_production else 'Lax',
+        'path': '/', 
     }
     
 
@@ -25,5 +29,4 @@ def set_jwt_cookies(response, user):
         **cookie_kwargs
     )
     
-    response['access_token'] = refresh.access_token
     return response

@@ -157,4 +157,4 @@ class GoogleLoginCallbackView(APIView):
 
 @csrf_exempt
 def hello_api(request):
-    return JsonResponse({"message": "Hello from Django API after deployment!"})
+    return JsonResponse({"message": "Hello from Django API after deployment! to show fayiz"})

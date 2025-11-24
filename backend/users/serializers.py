@@ -16,8 +16,8 @@ class UserRegistrationSerializer(serializers.Serializer):
         validators=[validate_password]
     )
     password2 = serializers.CharField(write_only=True, required=True)
-    role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
-
+    role = serializers.ChoiceField(choices=[('student', 'Student'), ('mentor', 'Mentor')])
+    
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError("Username already exists.")

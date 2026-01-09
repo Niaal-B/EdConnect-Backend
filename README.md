@@ -5,7 +5,7 @@
 [![Contributors](https://img.shields.io/github/contributors/Niaal-B/EdConnect)](https://github.com/username/edconnect/graphs/contributors)
 
 
-A full-stack mentorship platform connecting aspiring international students with mentors currently studying abroad.
+A full stack mentorship platform connecting aspiring international students with mentors currently studying abroad.
 
 ## Overview
 

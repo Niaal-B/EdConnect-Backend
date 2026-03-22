@@ -50,7 +50,6 @@ services:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt
       - ./nginx/certbot/www:/var/www/certbot
-      - /etc/letsencrypt:/etc/letsencrypt:ro
 
     depends_on:
       - backend
@@ -73,6 +72,19 @@ services:
 
     user: "1000:1000"
     command: ["celery", "-A", "config", "worker", "--loglevel=info", "--uid=0"]    
+    depends_on:
+      - redis
+      - backend
+    env_file:
+      - ./.env
+    volumes:
+      - ./backend:/app
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["celery", "-A", "config", "beat", "--loglevel=info"]
     depends_on:
       - redis
       - backend

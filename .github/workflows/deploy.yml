@@ -22,10 +22,22 @@ jobs:
       - name: Deploy to EC2
         run: |
           cat <<'EOF' > deploy_script.sh
+          #!/bin/bash
+          set -e
+          echo "🚀 Starting deployment on server at $(date)"
           cd /home/ubuntu/EdConnect-Backend
-          sudo git pull
+          
+          echo "Current Directory: $(pwd)"
+          echo "Current Branch: $(git branch --show-current)"
+          
+          echo "Pulling latest changes..."
+          git pull
+          
+          echo "Rebuilding and Restarting Containers..."
           sudo docker compose down
           sudo docker compose up -d --build
+          
+          echo "Deployment Successful at $(date)"
           EOF
 
           scp -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key.pem deploy_script.sh ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy_script.sh

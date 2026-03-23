@@ -95,7 +95,6 @@ class LogoutView(APIView):
             "path": "/",
             "domain": None,  
             "samesite": "None",
-            "secure": True,
         }
 
         response.delete_cookie("access_token", **cookie_kwargs)

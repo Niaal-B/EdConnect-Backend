@@ -20,6 +20,10 @@ DEBUG = os.getenv("DEBUG") == "True"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
 
+# Recognize HTTPS behind Nginx proxy
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = False  # Nginx handles this
+
 
 # Application definition
 
@@ -201,6 +205,18 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+
+# CSRF settings for cross-site (Vercel)
+CSRF_TRUSTED_ORIGINS = [
+    "https://ed-connect-frontend.vercel.app",
+    "https://api.ahamedshamil.in"
+]
+
+# Session and CSRF cookie security
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SAMESITE = 'None'
 
 
 # Static files (CSS, JavaScript, Images)

@@ -79,7 +79,7 @@ cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 ```
 
-Configure your environment files with appropriate values for database connections, API keys, and service URLs.
+Configure your environment files with appropriate values for database connections, API keys, and service URLs. 
 
 Start the application with Docker:
 ```bash

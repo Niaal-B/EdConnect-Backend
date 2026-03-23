@@ -91,7 +91,9 @@ ASGI_APPLICATION = 'config.asgi.application'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://ed-connect-frontend.vercel.app"
+    "https://ed-connect-frontend.vercel.app",
+    "https://ahamedshamil.in",
+    "https://www.ahamedshamil.in"
 ]
 
 
@@ -209,7 +211,9 @@ USE_TZ = True
 # CSRF settings for cross-site (Vercel)
 CSRF_TRUSTED_ORIGINS = [
     "https://ed-connect-frontend.vercel.app",
-    "https://api.ahamedshamil.in"
+    "https://api.ahamedshamil.in",
+    "https://ahamedshamil.in",
+    "https://www.ahamedshamil.in"
 ]
 
 # Session and CSRF cookie security

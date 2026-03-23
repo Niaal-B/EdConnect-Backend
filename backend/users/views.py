@@ -94,7 +94,8 @@ class LogoutView(APIView):
         cookie_kwargs = {
             "path": "/",
             "domain": None,  
-            "samesite": "None" if not settings.DEBUG else "Lax",
+            "samesite": "None",
+            "secure": True,
         }
 
         response.delete_cookie("access_token", **cookie_kwargs)

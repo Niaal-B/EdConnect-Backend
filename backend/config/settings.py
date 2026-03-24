@@ -227,7 +227,7 @@ CSRF_COOKIE_SAMESITE = 'None'
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
-STATIC_URL = "https://edconnect-media.s3.eu-north-1.amazonaws.com/static/"
+STATIC_URL = f"https://{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.{os.getenv('AWS_S3_REGION_NAME', 'ap-south-1')}.amazonaws.com/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -280,7 +280,7 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 AWS_S3_SIGNATURE_VERSION = os.getenv("AWS_S3_SIGNATURE_VERSION", "s3v4")
-AWS_S3_REGION_NAME = "eu-north-1"
+AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "ap-south-1")
 AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = None
 AWS_S3_VERIFY = os.getenv("AWS_S3_VERIFY", "True") == "True"

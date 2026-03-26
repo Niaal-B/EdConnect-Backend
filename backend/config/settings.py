@@ -93,7 +93,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://ed-connect-frontend.vercel.app",
     "https://ahamedshamil.in",
-    "https://www.ahamedshamil.in"
+    "https://app.ahamedshamil.in"
 ]
 
 

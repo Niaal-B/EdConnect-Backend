@@ -407,40 +407,55 @@ class BookingCancelAPIView(generics.UpdateAPIView):
 
 
 class GenerateZegoTokenView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, format=None):
         try:
             booking_id = request.data.get('booking_id')
-            user_id = request.data.get('user_id')
-            
-            if not booking_id or not user_id:
-                return Response({'error': 'booking_id and user_id are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if not booking_id:
+                return Response({'error': 'booking_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
             try:
                 booking = Booking.objects.get(id=booking_id)
             except Booking.DoesNotExist:
                 return Response({'error': 'Booking not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-            if str(booking.student.id) != str(user_id) and str(booking.mentor.id) != str(user_id):
+            # Use the authenticated user's ID — prevents impersonation
+            user_id = str(request.user.id)
+
+            if str(booking.student.id) != user_id and str(booking.mentor.id) != user_id:
                 return Response({'error': 'You do not have permission to join this session.'}, status=status.HTTP_403_FORBIDDEN)
-            
+
+            if booking.status != 'CONFIRMED':
+                return Response({'error': 'This session is not active.'}, status=status.HTTP_400_BAD_REQUEST)
+
             app_id = settings.ZEGO_APP_ID
             server_secret = settings.ZEGO_SERVER_SECRET
             effective_time_in_seconds = 3600
- 
+
             token_info = generate_token04(
-                int(app_id), 
-                user_id, 
-                server_secret, 
-                effective_time_in_seconds, 
+                int(app_id),
+                user_id,
+                server_secret,
+                effective_time_in_seconds,
                 payload=''
             )
 
             if token_info.error_code == 0:
-                return Response({'token': token_info.token}, status=status.HTTP_200_OK)
+                return Response({
+                    'token': token_info.token,
+                    'app_id': int(app_id),
+                    'user_id': user_id,
+                    'room_id': str(booking.id),
+                    'user_name': request.user.username,
+                }, status=status.HTTP_200_OK)
             else:
                 return Response({'error': token_info.error_message}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         except Exception as e:
+            logger.error(f"Error generating Zego token: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

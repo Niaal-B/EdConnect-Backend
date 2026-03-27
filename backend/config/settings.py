@@ -182,7 +182,6 @@ SOCIALACCOUNT_PROVIDERS = {
         'SCOPE': [
             'https://www.googleapis.com/auth/userinfo.profile',
             'https://www.googleapis.com/auth/userinfo.email',
-            'https://www.googleapis.com/auth/calendar',
             'openid',
         ],
         'AUTH_PARAMS': {

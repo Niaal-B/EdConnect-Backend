@@ -31,7 +31,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 self.notification_group_name,
                 self.channel_name
             )
-            print(f"User {self.user.username} disconnected from notifications WebSocket.")
 
     async def receive(self, text_data):
         #For Futre enhancement
@@ -44,5 +43,4 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             'type': 'notification', 
             'notification': notification_data
         }))
-        print(f"Sent real-time notification to {self.user.username}: {notification_data['message']}")
 

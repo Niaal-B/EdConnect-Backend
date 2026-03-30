@@ -3,7 +3,7 @@
 [![Build Status](https://img.shields.io/github/workflow/status/Niaal-B/EdConnectCI)](https://github.com/Niaal-B/EdConnectactions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/Niaal-B/EdConnect)](https://github.com/username/edconnect/graphs/contributors)
-
+ 
 
 A full-stack mentorship platform connecting aspiring international students with mentors currently studying abroad.
 

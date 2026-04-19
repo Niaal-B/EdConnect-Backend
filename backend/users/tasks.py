@@ -29,6 +29,15 @@ def send_verification_email(email, token):
     msg.attach_alternative(html_content, "text/html")
     msg.send()
 
+
+@shared_task
+def flush_expired_tokens():
+    """
+    Clears expired tokens from the outstanding and blacklisted token tables.
+    """
+    from django.core.management import call_command
+    call_command('flushexpiredtokens')
+
 @shared_task
 def send_reset_password_email(email, reset_link):
     subject = "Reset Your EdConnect Password"

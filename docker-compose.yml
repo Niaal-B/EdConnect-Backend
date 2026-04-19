@@ -17,6 +17,10 @@ services:
       - ./backend/staticfiles:/app/staticfiles 
     
     command: ["daphne", "config.asgi:application", "-b", "0.0.0.0", "-p", "8000"]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   redis:
     image: redis:7.0
@@ -72,6 +76,10 @@ services:
 
     user: "1000:1000"
     command: ["celery", "-A", "config", "worker", "--loglevel=info", "--uid=0"]    
+    deploy:
+      resources:
+        limits:
+          memory: 384M
     depends_on:
       - redis
       - backend
@@ -85,6 +93,10 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     command: ["celery", "-A", "config", "beat", "--loglevel=info"]
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     depends_on:
       - redis
       - backend

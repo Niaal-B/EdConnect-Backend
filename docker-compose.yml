@@ -8,7 +8,6 @@ services:
     # ports:
     #   - "8000:8000"
     depends_on:
-      - db
       - redis
     env_file:
       - ./.env  
@@ -29,10 +28,9 @@ services:
     ports:
       - "6379:6379"
 
-  db:
+  old_db:
     image: postgres:15
-    container_name: postgres_db
-    restart: always
+    container_name: old_postgres_db
     environment:
       POSTGRES_DB: ${DB_NAME:-postgres}
       POSTGRES_USER: ${DB_USER:-postgres}

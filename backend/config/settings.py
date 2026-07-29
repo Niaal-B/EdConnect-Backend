@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'chat_app',
     'bookings',
     'notifications',
+    "learn_ai",
 
     
 

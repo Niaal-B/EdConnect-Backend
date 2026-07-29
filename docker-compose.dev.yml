@@ -16,14 +16,14 @@ services:
       - ./backend:/app  
       - ./backend/staticfiles:/app/staticfiles 
     
-    command: ["daphne", "config.asgi:application", "-b", "0.0.0.0", "-p", "8000"]
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
   redis:
     image: redis:7.0
     container_name: redis_server
     restart: always
     ports:
-      - "6379:6379"
+      - "6380:6379"
 
   db:
     image: postgres:15

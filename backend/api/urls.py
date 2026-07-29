@@ -15,5 +15,6 @@ urlpatterns = [
     path('notifications/',include('notifications.urls')),
     path('auth/google/callback/', GoogleLoginCallbackView.as_view(), name='google_login_callback'),
     path('sessions/', include('sessions.urls')), 
+    path("learn-ai/", include("learn_ai.urls")),
 
 ]

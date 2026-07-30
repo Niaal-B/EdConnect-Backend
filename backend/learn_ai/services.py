@@ -91,6 +91,14 @@ class YouTubeTranscriptService:
         """Fetch and normalize the caption text for a valid YouTube video URL."""
         video_id = self.extract_video_id(youtube_url)
         
+        # Configure proxy if available
+        proxies = None
+        if os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY"):
+            proxies = {
+                "http": os.getenv("HTTP_PROXY"),
+                "https": os.getenv("HTTPS_PROXY"),
+            }
+        
         # Try multiple languages with fallback
         languages = ['en', 'en-US', 'en-GB', 'hi', 'es', 'fr', 'de']
         transcript = None
@@ -98,7 +106,11 @@ class YouTubeTranscriptService:
         
         for lang in languages:
             try:
-                fetched_transcript = YouTubeTranscriptApi().fetch(video_id, languages=[lang])
+                fetched_transcript = YouTubeTranscriptApi().fetch(
+                    video_id, 
+                    languages=[lang],
+                    proxies=proxies
+                )
                 transcript = " ".join(snippet.text.strip() for snippet in fetched_transcript if snippet.text.strip())
                 if transcript:
                     break
@@ -117,7 +129,10 @@ class YouTubeTranscriptService:
         if not transcript:
             # Try without language specification
             try:
-                fetched_transcript = YouTubeTranscriptApi().fetch(video_id)
+                fetched_transcript = YouTubeTranscriptApi().fetch(
+                    video_id,
+                    proxies=proxies
+                )
                 transcript = " ".join(snippet.text.strip() for snippet in fetched_transcript if snippet.text.strip())
             except (
                 NoTranscriptFound,

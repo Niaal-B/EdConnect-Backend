@@ -54,13 +54,16 @@ class CheckSessionView(GenericAPIView):
             profile_picture_url = None
             is_verified = None  
 
-            if user.role == "mentor":
+            # Handle superusers as admins even if role is empty
+            user_role = user.role if user.role else ('admin' if user.is_superuser else '')
+
+            if user_role == "mentor":
                 details = MentorDetails.objects.get(user=user)
                 if details.profile_picture:
                     profile_picture_url = request.build_absolute_uri(details.profile_picture.url)
                 is_verified = details.is_verified  
 
-            elif user.role == "student":
+            elif user_role == "student":
                 details = StudentDetails.objects.get(user=user)
                 if details.profile_picture:
                     profile_picture_url = request.build_absolute_uri(details.profile_picture.url)
@@ -71,13 +74,13 @@ class CheckSessionView(GenericAPIView):
                     "id": user.id,
                     "email": user.email,
                     "username": user.username,
-                    "role": user.role,
+                    "role": user_role,
                     "profile_picture": profile_picture_url,
                 },
                 "message": "session is valid"
             }
 
-            if user.role == "mentor":
+            if user_role == "mentor":
                 response_data["user"]["is_verified"] = is_verified
 
             return Response(response_data)

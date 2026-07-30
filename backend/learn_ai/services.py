@@ -91,6 +91,19 @@ class YouTubeTranscriptService:
         """Fetch and normalize the caption text for a valid YouTube video URL."""
         video_id = self.extract_video_id(youtube_url)
         
+        # Configure proxy if available
+        proxy_config = None
+        http_proxy = os.getenv("HTTP_PROXY")
+        https_proxy = os.getenv("HTTPS_PROXY")
+        
+        if http_proxy or https_proxy:
+            from youtube_transcript_api._transcripts import TranscriptsFetcher
+            proxy_config = {
+                "http": http_proxy or https_proxy,
+                "https": https_proxy or http_proxy,
+            }
+            logger.info(f"Using proxy configuration: {proxy_config}")
+        
         # Try multiple languages with fallback
         languages = ['en', 'en-US', 'en-GB', 'hi', 'es', 'fr', 'de']
         transcript = None
@@ -98,7 +111,12 @@ class YouTubeTranscriptService:
         
         for lang in languages:
             try:
-                fetched_transcript = YouTubeTranscriptApi().fetch(video_id, languages=[lang])
+                if proxy_config:
+                    fetched_transcript = YouTubeTranscriptApi(
+                        proxy_config=proxy_config
+                    ).fetch(video_id, languages=[lang])
+                else:
+                    fetched_transcript = YouTubeTranscriptApi().fetch(video_id, languages=[lang])
                 transcript = " ".join(snippet.text.strip() for snippet in fetched_transcript if snippet.text.strip())
                 if transcript:
                     break
@@ -117,7 +135,12 @@ class YouTubeTranscriptService:
         if not transcript:
             # Try without language specification
             try:
-                fetched_transcript = YouTubeTranscriptApi().fetch(video_id)
+                if proxy_config:
+                    fetched_transcript = YouTubeTranscriptApi(
+                        proxy_config=proxy_config
+                    ).fetch(video_id)
+                else:
+                    fetched_transcript = YouTubeTranscriptApi().fetch(video_id)
                 transcript = " ".join(snippet.text.strip() for snippet in fetched_transcript if snippet.text.strip())
             except (
                 NoTranscriptFound,

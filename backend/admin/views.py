@@ -41,6 +41,7 @@ class AdminLoginView(generics.GenericAPIView):
               "id": user.id,
                 "username":user.username,
                 "email": user.email,
+                "role": user.role,
         }
         },status=status.HTTP_200_OK)
 

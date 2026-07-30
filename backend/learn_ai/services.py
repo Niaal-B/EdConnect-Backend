@@ -168,6 +168,8 @@ class AIStudyNotesService:
             logger.error("GROQ_API_KEY is not configured")
             raise AIServiceUnavailableError()
 
+        logger.info(f"Generating notes with model: {self.model}, transcript length: {len(transcript)}")
+        
         payload = {
             "model": self.model,
             "messages": [
@@ -188,12 +190,15 @@ class AIStudyNotesService:
                 json=payload,
                 timeout=self.TIMEOUT_SECONDS,
             )
+            logger.info(f"Groq API response status: {response.status_code}")
+            
             if response.status_code == self.HTTP_TOO_MANY_REQUESTS:
                 logger.warning("Groq quota exceeded for model %s", self.model)
                 raise AIQuotaExceededError()
             response.raise_for_status()
             data = response.json()
             summary = data["choices"][0]["message"]["content"].strip()
+            logger.info(f"Successfully generated summary, length: {len(summary)}")
         except AIQuotaExceededError:
             raise
         except (requests.RequestException, ValueError, KeyError, IndexError, TypeError) as exc:
@@ -203,6 +208,7 @@ class AIStudyNotesService:
             raise AIResponseError() from exc
 
         if not summary:
+            logger.error("Generated summary is empty")
             raise AIResponseError()
         return summary
 

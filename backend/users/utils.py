@@ -9,8 +9,8 @@ def set_jwt_cookies(response, user):
     
     cookie_kwargs = {
         'httponly': True,
-        'secure': True,  # Set to True for HTTPS
-        'samesite': 'None', # Required for cross-site (Vercel to AWS)
+        'secure': not settings.DEBUG,  # False in development, True in production
+        'samesite': 'Lax' if settings.DEBUG else 'None',  # Lax for localhost, None for cross-site
         'path': '/', 
     }
     

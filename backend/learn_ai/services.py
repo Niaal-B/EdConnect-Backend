@@ -90,19 +90,46 @@ class YouTubeTranscriptService:
     def get_transcript(self, youtube_url: str) -> TranscriptResult:
         """Fetch and normalize the caption text for a valid YouTube video URL."""
         video_id = self.extract_video_id(youtube_url)
-        try:
-            fetched_transcript = YouTubeTranscriptApi().fetch(video_id)
-            transcript = " ".join(snippet.text.strip() for snippet in fetched_transcript if snippet.text.strip())
-        except (
-            NoTranscriptFound,
-            TranscriptsDisabled,
-            VideoUnavailable,
-            YouTubeTranscriptApiException,
-        ) as exc:
-            raise TranscriptNotAvailableError() from exc
-        except requests.RequestException as exc:
-            logger.warning("YouTube transcript request failed for video %s", video_id, exc_info=True)
-            raise TranscriptNotAvailableError() from exc
+        
+        # Try multiple languages with fallback
+        languages = ['en', 'en-US', 'en-GB', 'hi', 'es', 'fr', 'de']
+        transcript = None
+        last_error = None
+        
+        for lang in languages:
+            try:
+                fetched_transcript = YouTubeTranscriptApi().fetch(video_id, languages=[lang])
+                transcript = " ".join(snippet.text.strip() for snippet in fetched_transcript if snippet.text.strip())
+                if transcript:
+                    break
+            except (
+                NoTranscriptFound,
+                TranscriptsDisabled,
+                VideoUnavailable,
+                YouTubeTranscriptApiException,
+            ) as exc:
+                last_error = exc
+                continue
+            except requests.RequestException as exc:
+                last_error = exc
+                continue
+        
+        if not transcript:
+            # Try without language specification
+            try:
+                fetched_transcript = YouTubeTranscriptApi().fetch(video_id)
+                transcript = " ".join(snippet.text.strip() for snippet in fetched_transcript if snippet.text.strip())
+            except (
+                NoTranscriptFound,
+                TranscriptsDisabled,
+                VideoUnavailable,
+                YouTubeTranscriptApiException,
+            ) as exc:
+                logger.warning("YouTube transcript request failed for video %s", video_id, exc_info=True)
+                raise TranscriptNotAvailableError() from exc
+            except requests.RequestException as exc:
+                logger.warning("YouTube transcript request failed for video %s", video_id, exc_info=True)
+                raise TranscriptNotAvailableError() from exc
 
         if not transcript:
             raise TranscriptNotAvailableError()

@@ -210,6 +210,10 @@ USE_TZ = True
 
 # CSRF settings for cross-site (Vercel)
 CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
     "https://ed-connect-frontend.vercel.app",
     "https://api.ahamedshamil.in",
     "https://ahamedshamil.in",
@@ -217,10 +221,11 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Session and CSRF cookie security
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SAMESITE = 'None'
+# Use secure cookies only in production, not in development
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SAMESITE = 'Lax' if DEBUG else 'None'
+CSRF_COOKIE_SAMESITE = 'Lax' if DEBUG else 'None'
 
 
 # Static files (CSS, JavaScript, Images)
@@ -257,9 +262,9 @@ AUTH_USER_MODEL = 'users.User'
 
 SIMPLE_JWT = {
     'AUTH_COOKIE': 'access_token',            # access token cookie name
-    'AUTH_COOKIE_SECURE': True,               # must be True for HTTPS
+    'AUTH_COOKIE_SECURE': not DEBUG,          # True for HTTPS, False for HTTP development
     'AUTH_COOKIE_HTTP_ONLY': True,            # JS cannot access
-    'AUTH_COOKIE_SAMESITE': 'None',           # allow cross-site requests
+    'AUTH_COOKIE_SAMESITE': 'Lax' if DEBUG else 'None',  # Lax for localhost, None for cross-site
     'AUTH_COOKIE_PATH': '/',                   # cookie path
     'AUTH_COOKIE_DOMAIN': None,               # let browser handle domain automatically
     'AUTH_COOKIE_REFRESH': 'refresh_token',   # refresh token cookie name

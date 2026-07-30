@@ -34,8 +34,7 @@ class VerifyAuthView(GenericAPIView):
     permission_classes = [IsAuthenticated]  
     
     def get(self, request):
-
-        
+        user = request.user
         
         return Response({
             "user_id": user.id,
